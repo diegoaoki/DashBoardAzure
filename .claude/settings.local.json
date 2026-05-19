@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git ls-remote *)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(npm --version)",
+      "Bash(git --version)",
+      "Bash(git config *)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'feat: dashboard de vendas estático \\(HTML/CSS/JS + Chart.js\\) *)"
+    ]
+  }
+}
