@@ -2,6 +2,9 @@
   "functions": {
     "api/board.js": {
       "maxDuration": 60
+    },
+    "api/glpi.js": {
+      "maxDuration": 60
     }
   }
 }

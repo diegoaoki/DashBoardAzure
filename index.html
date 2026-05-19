@@ -38,6 +38,9 @@
         <a href="#" class="nav-item" data-view="qas">
           <span class="nav-ico">✎</span> QAs
         </a>
+        <a href="#" class="nav-item" data-view="glpi">
+          <span class="nav-ico">⛑</span> Suporte GLPI
+        </a>
       </nav>
       <div class="sidebar-foot">
         <p id="sourceInfo">Carregando fonte…</p>
@@ -52,19 +55,19 @@
           <p id="viewSubtitle">Relatórios do board do Azure DevOps</p>
         </div>
         <div class="topbar-actions">
-          <label class="select">
+          <label class="select" data-views="visao-geral responsaveis sprint aging qas">
             <span>Sprint</span>
             <select id="sprintFilter"><option value="">Todas</option></select>
           </label>
-          <label class="select">
+          <label class="select" data-views="visao-geral responsaveis sprint aging qas">
             <span>Analista</span>
             <select id="analystFilter"><option value="">Todos</option></select>
           </label>
-          <label class="select">
+          <label class="select" data-views="visao-geral responsaveis sprint aging qas">
             <span>QA</span>
             <select id="qaFilter"><option value="">Todos</option></select>
           </label>
-          <label class="select">
+          <label class="select" data-views="visao-geral responsaveis sprint aging qas">
             <span>Período</span>
             <select id="periodFilter">
               <option value="0">Todo o período</option>
@@ -75,8 +78,8 @@
               <option value="365">Últimos 12 meses</option>
             </select>
           </label>
-          <span class="status-badge" id="statusBadge">Carregando…</span>
-          <button class="refresh-btn" id="refreshBtn" title="Atualizar">↻ Atualizar</button>
+          <span class="status-badge" id="statusBadge" data-views="visao-geral responsaveis sprint aging qas">Carregando…</span>
+          <button class="refresh-btn" id="refreshBtn" title="Atualizar" data-views="visao-geral responsaveis sprint aging qas">↻ Atualizar</button>
           <div class="avatar" title="Usuário">DF</div>
         </div>
       </header>
@@ -84,7 +87,7 @@
       <main class="content">
         <div class="banner" id="sprintBanner" data-views="visao-geral sprint" hidden></div>
 
-        <section class="kpi-grid" id="kpiGrid"></section>
+        <section class="kpi-grid" id="kpiGrid" data-views="visao-geral responsaveis sprint aging qas"></section>
 
         <section class="charts-grid">
           <article class="card chart-card chart-wide" data-views="visao-geral sprint">
@@ -118,7 +121,7 @@
           </article>
         </section>
 
-        <section class="card table-card">
+        <section class="card table-card" data-views="visao-geral responsaveis sprint aging qas">
           <header class="card-head">
             <h2>Work items (mais antigos em aberto)</h2>
             <input type="search" id="tableSearch" class="table-search" placeholder="Filtrar título / responsável…" />
@@ -139,6 +142,101 @@
             </table>
           </div>
         </section>
+        <!-- ===================== Suporte GLPI ===================== -->
+        <div data-views="glpi" hidden>
+          <section class="card glpi-bar">
+            <div class="glpi-bar-left">
+              <span class="status-badge" id="glpiBadge">Pronto</span>
+              <span id="glpiName" class="card-tag">—</span>
+            </div>
+            <div class="glpi-bar-right">
+              <input type="text" id="glpiEndpoint" class="table-search glpi-endpoint"
+                     placeholder="URL do endpoint GLPI (opcional — usa GLPI_ENDPOINT do servidor se vazio)" />
+              <button class="refresh-btn" id="glpiReload">↻ Carregar</button>
+            </div>
+          </section>
+
+          <section class="kpi-grid" id="glpiKpi"></section>
+
+          <section class="charts-grid">
+            <article class="card chart-card">
+              <header class="card-head"><h2>Status</h2></header>
+              <div class="chart-wrap"><canvas id="glpiChStatus"></canvas></div>
+            </article>
+            <article class="card chart-card">
+              <header class="card-head"><h2>Origem da requisição</h2></header>
+              <div class="chart-wrap"><canvas id="glpiChType"></canvas></div>
+            </article>
+            <article class="card chart-card chart-wide">
+              <header class="card-head"><h2>Faixas de tempo de resolução</h2></header>
+              <div class="chart-wrap"><canvas id="glpiChTtr"></canvas></div>
+            </article>
+            <article class="card chart-card chart-wide">
+              <header class="card-head"><h2>Linha do tempo · aberturas por dia</h2></header>
+              <div class="chart-wrap"><canvas id="glpiChTimeline"></canvas></div>
+            </article>
+          </section>
+
+          <section class="charts-grid">
+            <article class="card table-card">
+              <header class="card-head"><h2>Top 15 · Requerentes</h2></header>
+              <div class="table-wrap" style="max-height:340px;overflow-y:auto">
+                <table class="data-table">
+                  <thead><tr>
+                    <th>User ID</th><th class="num">Total</th>
+                    <th class="num">Fechados</th><th class="num">Abertos</th>
+                  </tr></thead>
+                  <tbody id="glpiRecip"></tbody>
+                </table>
+              </div>
+            </article>
+            <article class="card table-card">
+              <header class="card-head"><h2>Top 15 · Últimos atualizadores</h2></header>
+              <div class="table-wrap" style="max-height:340px;overflow-y:auto">
+                <table class="data-table">
+                  <thead><tr><th>User ID</th><th class="num">Tickets</th></tr></thead>
+                  <tbody id="glpiUpd"></tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+
+          <section class="card table-card">
+            <header class="card-head">
+              <h2>Tickets <span id="glpiCount" class="card-tag"></span></h2>
+            </header>
+            <div class="glpi-controls">
+              <input type="search" id="glpiSearch" class="table-search"
+                     placeholder="Buscar por título, ID ou user ID…" />
+              <select id="glpiStatusSel" class="glpi-sel">
+                <option value="">Todos os status</option>
+                <option value="1">1 · Novo</option>
+                <option value="2">2 · Em atendimento (atribuído)</option>
+                <option value="3">3 · Em atendimento (planejado)</option>
+                <option value="4">4 · Pendente</option>
+                <option value="5">5 · Solucionado</option>
+                <option value="6">6 · Fechado</option>
+              </select>
+              <select id="glpiSort" class="glpi-sel">
+                <option value="date_desc">Abertura ↓ (mais recente)</option>
+                <option value="date_asc">Abertura ↑ (mais antigo)</option>
+                <option value="ttr_desc">Maior tempo de resolução</option>
+                <option value="ttr_asc">Menor tempo de resolução</option>
+              </select>
+            </div>
+            <div class="table-wrap" style="max-height:520px;overflow-y:auto">
+              <table class="data-table">
+                <thead><tr>
+                  <th class="num">ID</th><th>Título</th><th>Status</th>
+                  <th>Abertura</th><th>1º Toque</th><th>Solução</th><th>Fechamento</th>
+                  <th class="num">TTA</th><th class="num">TTR</th>
+                  <th class="num">Req.</th><th class="num">Atu.</th>
+                </tr></thead>
+                <tbody id="glpiTickets"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
       </main>
     </div>
   </div>
@@ -146,6 +244,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="js/data.js"></script>
   <script src="js/charts.js"></script>
+  <script src="js/glpi.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

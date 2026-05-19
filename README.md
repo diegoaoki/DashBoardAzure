@@ -38,6 +38,8 @@ Em **Project → Settings → Environment Variables**, adicione:
 | `AZDO_TEAM`         | —           | Time/board específico. Padrão: time padrão do projeto          |
 | `AZDO_DONE_STATES`  | —           | Estados de "concluído". Padrão: `Closed,Done,Resolved,Completed,Removed` |
 | `AZDO_QA_MAX_ITEMS` | —           | Teto de cards para buscar comentários (aba QAs). Padrão: `600`  |
+| `GLPI_ENDPOINT`     | —           | URL completa do endpoint GLPI **com o token** (aba Suporte GLPI) |
+| `GLPI_ALLOWED_HOST` | —           | Host liberado p/ `?url=`. Padrão: `avenida.verdanadesk.com`     |
 
 Depois faça um **redeploy** para as variáveis entrarem em vigor.
 
@@ -70,7 +72,9 @@ css/styles.css    Tema escuro responsivo
 js/data.js        Carrega /api/board (fallback mock)
 js/charts.js      Gráficos Chart.js (estado, tipo, responsável, aging)
 js/app.js         KPIs, sprint, tabela, navegação, refresh
+js/glpi.js        Aba Suporte GLPI (relatório de tickets)
 api/board.js      Serverless Function → Azure DevOps REST API
+api/glpi.js       Proxy → endpoint GLPI (evita CORS; allowlist de host)
 ```
 
 ## Próximos passos

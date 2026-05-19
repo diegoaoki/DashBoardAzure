@@ -197,6 +197,7 @@
       const emptyBanner = el.id === "sprintBanner" && el.dataset.empty === "1" && v !== "sprint";
       el.hidden = !allowed || emptyBanner;
     });
+    if (v === "glpi" && window.DASH_GLPI) window.DASH_GLPI.activate();
   }
 
   /* ---------- status / boot ---------- */
