@@ -1,7 +1,7 @@
 /**
  * Aba "Suporte GLPI" — relatório de tickets do GLPI (utilsdashboards).
  * Busca via /api/glpi (proxy serverless que evita CORS).
- * Carrega sob demanda na 1ª vez que a aba é aberta; botão recarrega.
+ * Carrega na abertura da página; filtros no topo recalculam todo o relatório.
  */
 window.DASH_GLPI = (function () {
   const STATUS_NAMES = {
@@ -21,6 +21,7 @@ window.DASH_GLPI = (function () {
   let loaded = false;
   let charts = {};
   let allTickets = [];
+  let lastDupes = 0;
 
   const parseDate = (s) => {
     if (!s) return null;
@@ -53,6 +54,52 @@ window.DASH_GLPI = (function () {
     charts = {};
   }
 
+  /* ---------- filtros globais ---------- */
+  function readFilters() {
+    return {
+      st: $("glpiFltStatus").value,
+      og: $("glpiFltOrigem").value,
+      rq: $("glpiFltReq").value,
+      days: parseInt($("glpiFltPeriodo").value, 10) || 0,
+    };
+  }
+  function baseFiltered() {
+    const f = readFilters();
+    const minTime = f.days ? Date.now() - f.days * 86400000 : 0;
+    return allTickets.filter((t) => {
+      if (f.st && String(t.STATUS) !== f.st) return false;
+      if (f.og && String(t.REQUESTTYPES_ID) !== f.og) return false;
+      if (f.rq && String(t.USERS_ID_RECIPIENT) !== f.rq) return false;
+      if (minTime) {
+        const d = parseDate(t.DATE);
+        if (!d || d.getTime() < minTime) return false;
+      }
+      return true;
+    });
+  }
+  function fillFilterOptions() {
+    const og = $("glpiFltOrigem");
+    const ogPrev = og.value;
+    const tipos = [...new Set(allTickets.map((t) => String(t.REQUESTTYPES_ID)).filter(Boolean))]
+      .sort((a, b) => a - b);
+    og.innerHTML =
+      '<option value="">Todas</option>' +
+      tipos
+        .map((id) => `<option value="${esc(id)}">${esc(REQUEST_TYPES[id] || "Tipo " + id)}</option>`)
+        .join("");
+    if (tipos.includes(ogPrev)) og.value = ogPrev;
+
+    const rq = $("glpiFltReq");
+    const rqPrev = rq.value;
+    const reqs = [...new Set(allTickets.map((t) => String(t.USERS_ID_RECIPIENT)).filter((v) => v && v !== "0"))]
+      .sort((a, b) => Number(a) - Number(b));
+    rq.innerHTML =
+      '<option value="">Todos</option>' +
+      reqs.map((id) => `<option value="${esc(id)}">${esc(id)}</option>`).join("");
+    if (reqs.includes(rqPrev)) rq.value = rqPrev;
+  }
+
+  /* ---------- charts/render ---------- */
   function doughnut(canvasId, obj) {
     const labels = Object.keys(obj);
     return new Chart($(canvasId), {
@@ -105,7 +152,7 @@ window.DASH_GLPI = (function () {
       kpi("Em aberto", open.toLocaleString("pt-BR"), total ? ((open / total) * 100).toFixed(1) + "%" : ""),
       kpi("1º atendimento médio", fmtDur(avg(ttas)), "abertura → 1º toque"),
       kpi("Tempo médio resolução", fmtDur(avg(ttrs)), "abertura → solução"),
-      kpi("Duplicatas removidas", dupes.toLocaleString("pt-BR"), "registros idênticos"),
+      kpi("Duplicatas removidas", dupes.toLocaleString("pt-BR"), "no carregamento"),
     ].join("");
 
     const byStatus = {};
@@ -173,7 +220,7 @@ window.DASH_GLPI = (function () {
       .sort((a, b) => b[1].total - a[1].total)
       .slice(0, 15)
       .map(([id, v]) => `<tr><td>${esc(id)}</td><td class="num">${v.total}</td><td class="num">${v.closed}</td><td class="num">${v.total - v.closed}</td></tr>`)
-      .join("");
+      .join("") || `<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:20px">—</td></tr>`;
 
     const upd = {};
     tickets.forEach((t) => {
@@ -184,35 +231,35 @@ window.DASH_GLPI = (function () {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 15)
       .map(([id, v]) => `<tr><td>${esc(id)}</td><td class="num">${v}</td></tr>`)
-      .join("");
+      .join("") || `<tr><td colspan="2" style="text-align:center;color:var(--text-dim);padding:20px">—</td></tr>`;
 
-    renderTable();
+    renderTable(tickets);
   }
 
-  function renderTable() {
+  function renderTable(base) {
     const q = $("glpiSearch").value.trim().toLowerCase();
-    const st = $("glpiStatusSel").value;
     const sort = $("glpiSort").value;
 
-    let rows = allTickets.filter((t) => {
-      if (st && String(t.STATUS) !== st) return false;
-      if (q) {
-        const hay = [t.ID, t.NAME, t.USERS_ID_RECIPIENT, t.USERS_ID_LASTUPDATER].join(" ").toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    }).map((t) => {
-      const o = parseDate(t.DATE);
-      return {
-        ...t,
-        _o: o,
-        _f: parseDate(t.TAKEINTOACCOUNTDATE),
-        _s: parseDate(t.SOLVEDATE),
-        _c: parseDate(t.CLOSEDATE),
-        _tta: diffHours(o, parseDate(t.TAKEINTOACCOUNTDATE)),
-        _ttr: diffHours(o, parseDate(t.SOLVEDATE)),
-      };
-    });
+    let rows = base
+      .filter((t) => {
+        if (!q) return true;
+        return [t.ID, t.NAME, t.USERS_ID_RECIPIENT, t.USERS_ID_LASTUPDATER]
+          .join(" ")
+          .toLowerCase()
+          .includes(q);
+      })
+      .map((t) => {
+        const o = parseDate(t.DATE);
+        return {
+          ...t,
+          _o: o,
+          _f: parseDate(t.TAKEINTOACCOUNTDATE),
+          _s: parseDate(t.SOLVEDATE),
+          _c: parseDate(t.CLOSEDATE),
+          _tta: diffHours(o, parseDate(t.TAKEINTOACCOUNTDATE)),
+          _ttr: diffHours(o, parseDate(t.SOLVEDATE)),
+        };
+      });
 
     rows.sort((a, b) => {
       if (sort === "date_desc") return (b._o || 0) - (a._o || 0);
@@ -240,7 +287,11 @@ window.DASH_GLPI = (function () {
     if (rows.length > max)
       html += `<tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:12px">+ ${rows.length - max} linhas ocultas (refine a busca)</td></tr>`;
     $("glpiTickets").innerHTML =
-      html || `<tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:28px">Nenhum ticket.</td></tr>`;
+      html || `<tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:28px">Nenhum ticket para os filtros.</td></tr>`;
+  }
+
+  function recompute() {
+    if (allTickets.length) renderAll(baseFiltered(), lastDupes);
   }
 
   async function load() {
@@ -248,6 +299,7 @@ window.DASH_GLPI = (function () {
     const url = "/api/glpi" + (override ? "?url=" + encodeURIComponent(override) : "");
     badge("Carregando…", "");
     $("glpiReload").disabled = true;
+    $("glpiTopReload").disabled = true;
     try {
       const r = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
       const json = await r.json();
@@ -266,7 +318,9 @@ window.DASH_GLPI = (function () {
         tickets.push(t);
       }
       allTickets = tickets;
-      renderAll(tickets, dupes);
+      lastDupes = dupes;
+      fillFilterOptions();
+      recompute();
       badge("✓ " + tickets.length + " tickets", "ok");
       loaded = true;
     } catch (e) {
@@ -274,19 +328,25 @@ window.DASH_GLPI = (function () {
       $("glpiName").textContent = String(e.message || e);
     } finally {
       $("glpiReload").disabled = false;
+      $("glpiTopReload").disabled = false;
     }
   }
 
   function bind() {
     $("glpiReload").addEventListener("click", load);
-    ["glpiSearch", "glpiStatusSel", "glpiSort"].forEach((id) =>
-      $(id).addEventListener(id === "glpiSearch" ? "input" : "change", () => {
-        if (allTickets.length) renderTable();
-      })
+    $("glpiTopReload").addEventListener("click", load);
+    ["glpiFltStatus", "glpiFltOrigem", "glpiFltReq", "glpiFltPeriodo"].forEach((id) =>
+      $(id).addEventListener("change", recompute)
     );
+    $("glpiSearch").addEventListener("input", () => {
+      if (allTickets.length) renderTable(baseFiltered());
+    });
+    $("glpiSort").addEventListener("change", () => {
+      if (allTickets.length) renderTable(baseFiltered());
+    });
   }
 
-  // chamado pelo app quando a aba GLPI é aberta (carrega 1x)
+  // chamado pelo app: carga na abertura da página (1x) e ao abrir a aba
   function activate() {
     if (!loaded) load();
   }

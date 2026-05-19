@@ -97,6 +97,40 @@
           </label>
           <span class="status-badge" id="statusBadge" data-views="visao-geral responsaveis sprint aging qas">Carregando…</span>
           <button class="refresh-btn" id="refreshBtn" title="Atualizar" data-views="visao-geral responsaveis sprint aging qas">↻ Atualizar</button>
+
+          <label class="select" data-views="glpi">
+            <span>Status</span>
+            <select id="glpiFltStatus">
+              <option value="">Todos</option>
+              <option value="1">Novo</option>
+              <option value="2">Em atend. (atribuído)</option>
+              <option value="3">Em atend. (planejado)</option>
+              <option value="4">Pendente</option>
+              <option value="5">Solucionado</option>
+              <option value="6">Fechado</option>
+            </select>
+          </label>
+          <label class="select" data-views="glpi">
+            <span>Origem</span>
+            <select id="glpiFltOrigem"><option value="">Todas</option></select>
+          </label>
+          <label class="select" data-views="glpi">
+            <span>Requerente</span>
+            <select id="glpiFltReq"><option value="">Todos</option></select>
+          </label>
+          <label class="select" data-views="glpi">
+            <span>Período</span>
+            <select id="glpiFltPeriodo">
+              <option value="0">Todo o período</option>
+              <option value="7">Últimos 7 dias</option>
+              <option value="30">Últimos 30 dias</option>
+              <option value="90">Últimos 90 dias</option>
+              <option value="180">Últimos 6 meses</option>
+              <option value="365">Últimos 12 meses</option>
+            </select>
+          </label>
+          <button class="refresh-btn" id="glpiTopReload" title="Recarregar GLPI" data-views="glpi">↻ Recarregar</button>
+
           <div class="avatar" title="Usuário">DF</div>
         </div>
       </header>
@@ -225,15 +259,6 @@
             <div class="glpi-controls">
               <input type="search" id="glpiSearch" class="table-search"
                      placeholder="Buscar por título, ID ou user ID…" />
-              <select id="glpiStatusSel" class="glpi-sel">
-                <option value="">Todos os status</option>
-                <option value="1">1 · Novo</option>
-                <option value="2">2 · Em atendimento (atribuído)</option>
-                <option value="3">3 · Em atendimento (planejado)</option>
-                <option value="4">4 · Pendente</option>
-                <option value="5">5 · Solucionado</option>
-                <option value="6">6 · Fechado</option>
-              </select>
               <select id="glpiSort" class="glpi-sel">
                 <option value="date_desc">Abertura ↓ (mais recente)</option>
                 <option value="date_asc">Abertura ↑ (mais antigo)</option>

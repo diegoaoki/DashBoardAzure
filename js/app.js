@@ -326,5 +326,7 @@
     C.init(onPick);
     bind();
     refresh();
+    // carrega o relatório GLPI já na abertura (em paralelo, fica pronto)
+    if (window.DASH_GLPI) window.DASH_GLPI.activate();
   });
 })();
