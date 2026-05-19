@@ -56,6 +56,9 @@
             <a href="#" class="nav-item" data-view="glpi">
               <span class="nav-ico">▤</span> GLPI
             </a>
+            <a href="#" class="nav-item" data-view="glpi-ana-mes">
+              <span class="nav-ico">📈</span> Analistas / mês
+            </a>
           </div>
         </div>
       </nav>
@@ -139,6 +142,12 @@
             </select>
           </label>
           <button class="refresh-btn" id="glpiTopReload" title="Recarregar GLPI" data-views="glpi">↻ Recarregar</button>
+
+          <label class="select" data-views="glpi-ana-mes">
+            <span>Mês</span>
+            <select id="glpiAmMes"><option value="">Todos os meses</option></select>
+          </label>
+          <button class="refresh-btn" id="glpiAmReload" title="Recarregar GLPI" data-views="glpi-ana-mes">↻ Recarregar</button>
 
           <div class="avatar" title="Usuário">DF</div>
         </div>
@@ -235,10 +244,6 @@
               <header class="card-head"><h2>Linha do tempo · aberturas por dia</h2></header>
               <div class="chart-wrap"><canvas id="glpiChTimeline"></canvas></div>
             </article>
-            <article class="card chart-card chart-wide">
-              <header class="card-head"><h2>Chamados por analista · por mês</h2></header>
-              <div class="chart-wrap"><canvas id="glpiChAnaMes"></canvas></div>
-            </article>
           </section>
 
           <section class="charts-grid">
@@ -290,6 +295,26 @@
                 <tbody id="glpiTickets"></tbody>
               </table>
             </div>
+          </section>
+        </div>
+
+        <!-- ============ Suporte GLPI · Analistas por mês ============ -->
+        <div data-views="glpi-ana-mes" hidden>
+          <section class="card glpi-bar">
+            <div class="glpi-bar-left">
+              <span class="status-badge" id="glpiAmBadge">Pronto</span>
+              <span id="glpiAmName" class="card-tag">—</span>
+            </div>
+          </section>
+          <section class="charts-grid">
+            <article class="card chart-card chart-wide" style="grid-column:1/-1">
+              <header class="card-head">
+                <h2>Chamados por analista · mês a mês</h2>
+              </header>
+              <div class="chart-wrap" style="height:480px">
+                <canvas id="glpiChAnaMesView"></canvas>
+              </div>
+            </article>
           </section>
         </div>
       </main>

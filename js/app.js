@@ -12,6 +12,8 @@
     sprint: { title: "Sprint", subtitle: "Progresso da iteração atual" },
     aging: { title: "Aging", subtitle: "Há quanto tempo os itens estão em aberto" },
     qas: { title: "QAs", subtitle: "Cards comentados por QA — 1 por card, mesmo com vários comentários" },
+    glpi: { title: "Suporte GLPI", subtitle: "Relatório de tickets do GLPI" },
+    "glpi-ana-mes": { title: "Analistas / mês", subtitle: "Chamados por analista, mês a mês" },
   };
 
   let RAW = null; // payload completo da API
@@ -198,6 +200,7 @@
       el.hidden = !allowed || emptyBanner;
     });
     if (v === "glpi" && window.DASH_GLPI) window.DASH_GLPI.activate();
+    if (v === "glpi-ana-mes" && window.DASH_GLPI) window.DASH_GLPI.activateAnaMes();
   }
 
   /* ---------- status / boot ---------- */

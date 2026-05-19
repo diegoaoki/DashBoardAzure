@@ -29,6 +29,7 @@ window.DASH_GLPI = (function () {
   let charts = {};
   let allTickets = [];
   let lastDupes = 0;
+  let anaMesChart = null; // gráfico da sub-view "Analistas / mês"
 
   const parseDate = (s) => {
     if (!s) return null;
@@ -280,58 +281,6 @@ window.DASH_GLPI = (function () {
       },
     });
 
-    // Chamados por analista (técnico), por mês — barras empilhadas.
-    // Top 10 analistas + "Outros"; tickets sem técnico → "Sem analista".
-    const am = {};      // "YYYY-MM" -> { analista -> count }
-    const anaTot = {};  // analista -> total (p/ escolher os top)
-    tickets.forEach((t) => {
-      const d = parseDate(t.DATE);
-      if (!d) return;
-      const mk = d.toISOString().slice(0, 7);
-      const nomes = [...new Set(tecsOf(t.ID).map((x) => x.nome))];
-      const list = nomes.length ? nomes : ["Sem analista"];
-      list.forEach((nome) => {
-        (am[mk] = am[mk] || {})[nome] = (am[mk][nome] || 0) + 1;
-        anaTot[nome] = (anaTot[nome] || 0) + 1;
-      });
-    });
-    const amMonths = Object.keys(am).sort();
-    const topAna = Object.entries(anaTot)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([n]) => n);
-    const amSeries = Object.keys(anaTot).length > topAna.length
-      ? [...topAna, "Outros"]
-      : topAna;
-    const amDatasets = amSeries.map((nome, i) => ({
-      label: nome,
-      data: amMonths.map((mk) => {
-        const row = am[mk] || {};
-        if (nome === "Outros")
-          return Object.entries(row).reduce(
-            (s, [k, v]) => (topAna.includes(k) ? s : s + v), 0
-          );
-        return row[nome] || 0;
-      }),
-      backgroundColor: COLORS[i % COLORS.length],
-      borderWidth: 0,
-    }));
-    charts.anaMes = new Chart($("glpiChAnaMes"), {
-      type: "bar",
-      data: { labels: amMonths, datasets: amDatasets },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } },
-          tooltip: { mode: "index" },
-        },
-        scales: {
-          x: { stacked: true, grid: { display: false } },
-          y: { stacked: true, beginAtZero: true },
-        },
-      },
-    });
-
     const recip = {};
     tickets.forEach((t) => {
       const id = t.USERS_ID_RECIPIENT;
@@ -426,6 +375,90 @@ window.DASH_GLPI = (function () {
     if (allTickets.length) renderAll(baseFiltered(), lastDupes);
   }
 
+  /* ---------- sub-view: Analistas / mês ----------
+   * Linha por analista (técnico); cada ponto = qtde de chamados
+   * naquele mês. Filtro de Mês opcional restringe a um único mês.
+   */
+  function monthsOf() {
+    return [...new Set(
+      allTickets.map((t) => {
+        const d = parseDate(t.DATE);
+        return d ? d.toISOString().slice(0, 7) : null;
+      }).filter(Boolean)
+    )].sort();
+  }
+  function fillAnaMesMonth() {
+    const sel = $("glpiAmMes");
+    if (!sel) return;
+    const prev = sel.value;
+    const ms = monthsOf();
+    sel.innerHTML =
+      '<option value="">Todos os meses</option>' +
+      ms.map((m) => `<option value="${m}">${m}</option>`).join("");
+    if (ms.includes(prev)) sel.value = prev;
+  }
+  function renderAnaMes() {
+    if (anaMesChart) { anaMesChart.destroy(); anaMesChart = null; }
+    const selMes = ($("glpiAmMes") && $("glpiAmMes").value) || "";
+    const am = {};      // "YYYY-MM" -> { analista -> count }
+    const anaTot = {};  // analista -> total (ordena as linhas)
+    allTickets.forEach((t) => {
+      const d = parseDate(t.DATE);
+      if (!d) return;
+      const mk = d.toISOString().slice(0, 7);
+      if (selMes && mk !== selMes) return;
+      const nomes = [...new Set(tecsOf(t.ID).map((x) => x.nome))];
+      const list = nomes.length ? nomes : ["Sem analista"];
+      list.forEach((nome) => {
+        (am[mk] = am[mk] || {})[nome] = (am[mk][nome] || 0) + 1;
+        anaTot[nome] = (anaTot[nome] || 0) + 1;
+      });
+    });
+    const ms = Object.keys(am).sort();
+    const analistas = Object.entries(anaTot)
+      .sort((a, b) => b[1] - a[1])
+      .map(([n]) => n);
+    const datasets = analistas.map((nome, i) => ({
+      label: nome,
+      data: ms.map((mk) => (am[mk] && am[mk][nome]) || 0),
+      borderColor: COLORS[i % COLORS.length],
+      backgroundColor: COLORS[i % COLORS.length],
+      tension: 0.25,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      fill: false,
+      spanGaps: true,
+    }));
+    anaMesChart = new Chart($("glpiChAnaMesView"), {
+      type: "line",
+      data: { labels: ms, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "nearest", intersect: false },
+        plugins: {
+          legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } },
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: { beginAtZero: true, ticks: { precision: 0 } },
+        },
+      },
+    });
+    const b = $("glpiAmBadge");
+    if (b) {
+      b.textContent = "✓ " + analistas.length + " analistas · " + ms.length + " meses";
+      b.className = "status-badge ok";
+    }
+    const nm = $("glpiAmName");
+    if (nm) nm.textContent = selMes ? "Mês: " + selMes : "Todos os meses";
+  }
+  async function activateAnaMes() {
+    if (!loaded) await load();
+    fillAnaMesMonth();
+    renderAnaMes();
+  }
+
   async function load() {
     const override = $("glpiEndpoint").value.trim();
     const url = "/api/glpi" + (override ? "?url=" + encodeURIComponent(override) : "");
@@ -496,6 +529,14 @@ window.DASH_GLPI = (function () {
     $("glpiSort").addEventListener("change", () => {
       if (allTickets.length) renderTable(baseFiltered());
     });
+    const amSel = $("glpiAmMes");
+    if (amSel) amSel.addEventListener("change", () => {
+      if (allTickets.length) renderAnaMes();
+    });
+    const amReload = $("glpiAmReload");
+    if (amReload) amReload.addEventListener("click", () => {
+      load().then(activateAnaMes);
+    });
   }
 
   // chamado pelo app: carga na abertura da página (1x) e ao abrir a aba
@@ -504,5 +545,5 @@ window.DASH_GLPI = (function () {
   }
 
   document.addEventListener("DOMContentLoaded", bind);
-  return { activate, reload: load };
+  return { activate, activateAnaMes, reload: load };
 })();
