@@ -1,23 +1,26 @@
 /**
  * Vercel Serverless Function — dados do board do Azure DevOps.
  *
- * Retorna os work items detalhados; a agregação (KPIs, gráficos) e os
- * filtros (analista / período) são feitos no cliente, para o filtro
- * ser instantâneo sem novas chamadas à API.
+ * Retorna os work items detalhados (incluindo os comentaristas de cada
+ * card). A agregação (KPIs, gráficos, aba QAs) e os filtros (analista /
+ * período) são feitos no cliente.
  *
  * Variáveis de ambiente (Vercel → Settings → Environment Variables):
- *   AZDO_ORG         (obrigatório)  organização (https://dev.azure.com/<ORG>)
- *   AZDO_PROJECT     (obrigatório)  projeto
- *   AZDO_PAT         (obrigatório)  Personal Access Token (Work Items: Read)
- *   AZDO_TEAM        (opcional)     time/board. Padrão: time padrão do projeto
- *   AZDO_DONE_STATES (opcional)     estados de "concluído", separados por vírgula.
- *                                   Padrão: Closed,Done,Resolved,Completed,Removed
+ *   AZDO_ORG          (obrigatório)  organização (https://dev.azure.com/<ORG>)
+ *   AZDO_PROJECT      (obrigatório)  projeto
+ *   AZDO_PAT          (obrigatório)  Personal Access Token (Work Items: Read)
+ *   AZDO_TEAM         (opcional)     time/board. Padrão: time padrão do projeto
+ *   AZDO_DONE_STATES  (opcional)     estados de "concluído" (vírgula).
+ *                                    Padrão: Closed,Done,Resolved,Completed,Removed
+ *   AZDO_QA_MAX_ITEMS (opcional)     teto de cards p/ buscar comentários. Padrão: 600
  */
 
 const API = "7.1";
+const COMMENTS_API = "7.1-preview.3";
 const DEFAULT_DONE = ["Closed", "Done", "Resolved", "Completed", "Removed"];
 const MAX_ITEMS = 2000;
 const BATCH = 200;
+const POOL = 12; // chamadas de comentários simultâneas
 
 function authHeader(pat) {
   return "Basic " + Buffer.from(":" + pat).toString("base64");
@@ -49,8 +52,29 @@ function daysBetween(a, b) {
   return Math.max(0, Math.round((b - a) / 86400000));
 }
 
+/** Executa fn sobre arr com no máximo `size` chamadas simultâneas. */
+async function mapPool(arr, size, fn) {
+  const res = new Array(arr.length);
+  let idx = 0;
+  const workers = Array.from({ length: Math.min(size, arr.length) }, async () => {
+    while (idx < arr.length) {
+      const cur = idx++;
+      res[cur] = await fn(arr[cur], cur);
+    }
+  });
+  await Promise.all(workers);
+  return res;
+}
+
 module.exports = async (req, res) => {
-  const { AZDO_ORG, AZDO_PROJECT, AZDO_PAT, AZDO_TEAM, AZDO_DONE_STATES } = process.env;
+  const {
+    AZDO_ORG,
+    AZDO_PROJECT,
+    AZDO_PAT,
+    AZDO_TEAM,
+    AZDO_DONE_STATES,
+    AZDO_QA_MAX_ITEMS,
+  } = process.env;
 
   if (!AZDO_ORG || !AZDO_PROJECT || !AZDO_PAT) {
     res.status(500).json({
@@ -69,6 +93,7 @@ module.exports = async (req, res) => {
     ? AZDO_DONE_STATES.split(",").map((s) => s.trim())
     : DEFAULT_DONE
   ).map((s) => s.toLowerCase());
+  const qaMax = parseInt(AZDO_QA_MAX_ITEMS, 10) || 600;
 
   try {
     const wiql = await azPost(`${teamBase}/_apis/wit/wiql?api-version=${API}`, AZDO_PAT, {
@@ -91,6 +116,7 @@ module.exports = async (req, res) => {
       "System.AssignedTo",
       "System.CreatedDate",
       "System.IterationPath",
+      "System.CommentCount",
       "Microsoft.VSTS.Scheduling.StoryPoints",
     ];
 
@@ -119,9 +145,34 @@ module.exports = async (req, res) => {
           concluido: doneStates.includes(String(estado).toLowerCase()),
           iteracao: f["System.IterationPath"] || "",
           pontos: Number(f["Microsoft.VSTS.Scheduling.StoryPoints"]) || 0,
+          comentarios: Number(f["System.CommentCount"]) || 0,
+          comentaristas: [], // preenchido abaixo p/ cards com comentários
         });
       }
     }
+
+    // QAs: buscar comentários só dos cards que têm comentários (teto qaMax,
+    // priorizando os mais recentemente alterados — items já vem nessa ordem).
+    const byId = new Map(items.map((i) => [i.id, i]));
+    const comCards = items.filter((i) => i.comentarios > 0).slice(0, qaMax);
+    const qaTruncated = items.filter((i) => i.comentarios > 0).length > qaMax;
+
+    await mapPool(comCards, POOL, async (it) => {
+      try {
+        const j = await azGet(
+          `${projBase}/_apis/wit/workItems/${it.id}/comments?api-version=${COMMENTS_API}&$top=200`,
+          AZDO_PAT
+        );
+        const nomes = new Set();
+        for (const c of j.comments || []) {
+          const n = c.createdBy && c.createdBy.displayName;
+          if (n) nomes.add(n); // distinto por pessoa => 1 por card
+        }
+        byId.get(it.id).comentaristas = [...nomes];
+      } catch {
+        /* falha em 1 card não derruba o resto */
+      }
+    });
 
     let sprint = null;
     try {
@@ -152,6 +203,7 @@ module.exports = async (req, res) => {
       sprint,
       totalNoBoard,
       truncated,
+      qaTruncated,
       items,
     });
   } catch (err) {

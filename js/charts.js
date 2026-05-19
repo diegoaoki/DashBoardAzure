@@ -21,7 +21,7 @@ window.DASH_CHARTS = (function () {
     y: { grid: { color: COLORS.grid }, ticks: { color: COLORS.text }, beginAtZero: true },
   };
 
-  let state, type, assignee, aging;
+  let state, type, assignee, aging, qa;
 
   function init() {
     state = new Chart(document.getElementById("stateChart"), {
@@ -56,6 +56,12 @@ window.DASH_CHARTS = (function () {
       },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales },
     });
+
+    qa = new Chart(document.getElementById("qaChart"), {
+      type: "bar",
+      data: { labels: [], datasets: [{ label: "Cards comentados", data: [], backgroundColor: COLORS.good, borderRadius: 6, maxBarThickness: 40 }] },
+      options: { responsive: true, maintainAspectRatio: false, indexAxis: "y", plugins: { legend: { display: false } }, scales },
+    });
   }
 
   function render(d) {
@@ -74,6 +80,10 @@ window.DASH_CHARTS = (function () {
     aging.data.labels = d.aging.map((x) => x.faixa);
     aging.data.datasets[0].data = d.aging.map((x) => x.qtd);
     aging.update();
+
+    qa.data.labels = d.byQA.map((x) => x.nome);
+    qa.data.datasets[0].data = d.byQA.map((x) => x.qtd);
+    qa.update();
   }
 
   return { init, render };

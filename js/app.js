@@ -11,6 +11,7 @@
     responsaveis: { title: "Responsáveis", subtitle: "Distribuição de itens por analista" },
     sprint: { title: "Sprint", subtitle: "Progresso da iteração atual" },
     aging: { title: "Aging", subtitle: "Há quanto tempo os itens estão em aberto" },
+    qas: { title: "QAs", subtitle: "Cards comentados por QA — 1 por card, mesmo com vários comentários" },
   };
 
   let RAW = null; // payload completo da API
@@ -34,6 +35,18 @@
     const m = {};
     for (const i of items) m[i[key]] = (m[i[key]] || 0) + 1;
     return Object.entries(m).map(([nome, qtd]) => ({ nome, qtd }));
+  }
+
+  // Conta, por pessoa, em quantos cards distintos ela comentou.
+  // item.comentaristas já vem distinto por card (1 por pessoa por card).
+  function countQA(items) {
+    const m = {};
+    for (const i of items)
+      for (const nome of i.comentaristas || []) m[nome] = (m[nome] || 0) + 1;
+    return Object.entries(m)
+      .map(([nome, qtd]) => ({ nome, qtd }))
+      .sort((a, b) => b.qtd - a.qtd)
+      .slice(0, 15);
   }
 
   function aggregate(items) {
@@ -74,6 +87,7 @@
       byAssignee: countBy(items, "responsavel")
         .sort((a, b) => b.qtd - a.qtd)
         .slice(0, 8),
+      byQA: countQA(items),
       aging: Object.entries(buckets).map(([faixa, qtd]) => ({ faixa, qtd })),
       sprint,
       itens: items.slice().sort((a, b) => b.idadeDias - a.idadeDias),

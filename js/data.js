@@ -8,6 +8,7 @@ window.DASH_DATA = (function () {
 
   function buildMock() {
     const nomes = ["Ana Souza", "Bruno Lima", "Carla Dias", "Diego F.", "Não atribuído"];
+    const qas = ["QA Paula", "QA Rafael", "QA Tânia"];
     const tipos = ["User Story", "Bug", "Task", "Feature"];
     const estados = ["New", "Active", "Resolved", "Closed", "Removed"];
     const now = Date.now();
@@ -25,6 +26,9 @@ window.DASH_DATA = (function () {
         concluido: estado === "Closed" || estado === "Removed" || estado === "Resolved",
         iteracao: "Projeto Demo\\Sprint 14",
         pontos: [0, 1, 2, 3, 5, 8][i % 6],
+        comentarios: i % 3,
+        // 0, 1 ou 2 QAs distintos por card (distinto = 1 por pessoa/card)
+        comentaristas: i % 3 === 0 ? [] : i % 3 === 1 ? [qas[i % 3]] : [qas[i % 3], qas[(i + 1) % 3]],
       };
     });
     return {

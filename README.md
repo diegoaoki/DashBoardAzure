@@ -19,6 +19,10 @@ A função roda WIQL, busca os work items em lote e calcula:
 - **Por responsável** — top pessoas por quantidade de itens
 - **Sprint atual** — itens e story points concluídos vs. abertos
 - **Aging** — itens em aberto por faixa de tempo (0-7 / 8-30 / 31-90 / 90+ dias)
+- **QAs** — quem comentou nos cards. Conta **1 por card** por pessoa, mesmo
+  com vários comentários. Busca comentários só de cards com `CommentCount > 0`,
+  com teto `AZDO_QA_MAX_ITEMS` e chamadas em paralelo (a função tem
+  `maxDuration` de 60s em `vercel.json`).
 
 Resultado fica em cache na borda do Vercel por 5 min (`stale-while-revalidate`).
 
@@ -33,6 +37,7 @@ Em **Project → Settings → Environment Variables**, adicione:
 | `AZDO_PAT`          | ✅          | Personal Access Token (ver abaixo)                             |
 | `AZDO_TEAM`         | —           | Time/board específico. Padrão: time padrão do projeto          |
 | `AZDO_DONE_STATES`  | —           | Estados de "concluído". Padrão: `Closed,Done,Resolved,Completed,Removed` |
+| `AZDO_QA_MAX_ITEMS` | —           | Teto de cards para buscar comentários (aba QAs). Padrão: `600`  |
 
 Depois faça um **redeploy** para as variáveis entrarem em vigor.
 
