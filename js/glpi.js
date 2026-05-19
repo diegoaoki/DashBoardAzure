@@ -20,6 +20,10 @@ window.DASH_GLPI = (function () {
     "#ff9e00", "#90e0ef", "#b5179e", "#80ed99", "#fdc500", "#48bfe3",
   ];
 
+  // Base do GLPI p/ abrir o chamado ao clicar (host da allowlist do proxy).
+  const GLPI_HOST = "https://avenida.verdanadesk.com";
+  const ticketUrl = (id) => `${GLPI_HOST}/front/ticket.form.php?id=${encodeURIComponent(id)}`;
+
   const $ = (id) => document.getElementById(id);
   let loaded = false;
   let charts = {};
@@ -91,12 +95,20 @@ window.DASH_GLPI = (function () {
       rq: $("glpiFltReq").value,
       an: $("glpiFltAnalista").value,
       ar: $("glpiFltArea").value,
-      days: parseInt($("glpiFltPeriodo").value, 10) || 0,
+      per: $("glpiFltPeriodo").value,
     };
   }
   function baseFiltered() {
     const f = readFilters();
-    const minTime = f.days ? Date.now() - f.days * 86400000 : 0;
+    let minTime = 0;
+    if (f.per === "hoje") {
+      const d0 = new Date();
+      d0.setHours(0, 0, 0, 0);
+      minTime = d0.getTime();
+    } else {
+      const days = parseInt(f.per, 10) || 0;
+      minTime = days ? Date.now() - days * 86400000 : 0;
+    }
     return allTickets.filter((t) => {
       if (f.st && String(t.STATUS) !== f.st) return false;
       if (f.og && String(t.REQUESTTYPES_ID) !== f.og) return false;
@@ -340,8 +352,8 @@ window.DASH_GLPI = (function () {
     $("glpiCount").textContent = "· " + rows.length + " de " + allTickets.length;
     const max = 500;
     let html = rows.slice(0, max).map((t) => `<tr>
-        <td class="num">${esc(t.ID)}</td>
-        <td>${esc(t.NAME || "")}</td>
+        <td class="num"><a href="${ticketUrl(t.ID)}" target="_blank" rel="noopener noreferrer">${esc(t.ID)}</a></td>
+        <td><a href="${ticketUrl(t.ID)}" target="_blank" rel="noopener noreferrer">${esc(t.NAME || "—")}</a></td>
         <td><span class="pill">${STATUS_NAMES[t.STATUS] || esc(t.STATUS)}</span></td>
         <td>${fmtDateShort(t._o)}</td>
         <td>${fmtDateShort(t._f)}</td>
