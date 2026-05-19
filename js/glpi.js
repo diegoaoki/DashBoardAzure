@@ -380,14 +380,21 @@ window.DASH_GLPI = (function () {
       if (!Array.isArray(json.data)) throw new Error("Formato inesperado: esperava { data: [...] }.");
 
       let tec = null;
-      if (rt && rt.ok) {
+      let tecErr = "";
+      if (rt) {
         const tj = await rt.json().catch(() => null);
-        if (tj && Array.isArray(tj.data)) tec = tj.data;
+        if (rt.ok && tj && Array.isArray(tj.data)) tec = tj.data;
+        else tecErr = (tj && tj.error) || "HTTP " + rt.status;
+      } else {
+        tecErr = "sem resposta de /api/glpi?src=tecnicos";
       }
       buildTecMap(tec);
 
       $("glpiName").textContent =
-        (json.name || "(sem nome)") + (tec ? "" : " · (sem dataset de técnicos)");
+        (json.name || "(sem nome)") +
+        (tec
+          ? " · técnicos: " + tec.length + " linhas"
+          : " · TÉCNICOS NÃO CARREGARAM → " + tecErr);
       const seen = new Set();
       const tickets = [];
       let dupes = 0;
