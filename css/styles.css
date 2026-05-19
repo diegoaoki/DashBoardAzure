@@ -52,6 +52,28 @@ body {
 .brand-name strong { color: var(--accent); }
 
 .nav { display: flex; flex-direction: column; gap: 4px; }
+.nav-group { display: flex; flex-direction: column; }
+.nav-group + .nav-group { margin-top: 6px; }
+.nav-group-head {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%;
+  padding: 11px 14px;
+  background: none; border: 0;
+  color: var(--text-dim);
+  font: inherit; font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.6px;
+  cursor: pointer; border-radius: 10px;
+  transition: background 0.15s, color 0.15s;
+}
+.nav-group-head:hover { background: var(--card); color: var(--text); }
+.nav-group-head .chev { margin-left: auto; transition: transform 0.2s; font-size: 11px; }
+.nav-group.collapsed .chev { transform: rotate(-90deg); }
+.nav-group-body {
+  display: flex; flex-direction: column; gap: 2px;
+  overflow: hidden; margin-top: 2px;
+}
+.nav-group.collapsed .nav-group-body { display: none; }
+.nav-group-body .nav-item { padding-left: 30px; font-size: 13px; }
 .nav-item {
   display: flex;
   align-items: center;

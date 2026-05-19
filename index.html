@@ -23,24 +23,41 @@
         <span class="brand-name">DashBoard<strong>Azure</strong></span>
       </div>
       <nav class="nav">
-        <a href="#" class="nav-item active" data-view="visao-geral">
-          <span class="nav-ico">▣</span> Visão geral
-        </a>
-        <a href="#" class="nav-item" data-view="responsaveis">
-          <span class="nav-ico">▤</span> Responsáveis
-        </a>
-        <a href="#" class="nav-item" data-view="sprint">
-          <span class="nav-ico">▦</span> Sprint
-        </a>
-        <a href="#" class="nav-item" data-view="aging">
-          <span class="nav-ico">◇</span> Aging
-        </a>
-        <a href="#" class="nav-item" data-view="qas">
-          <span class="nav-ico">✎</span> QAs
-        </a>
-        <a href="#" class="nav-item" data-view="glpi">
-          <span class="nav-ico">⛑</span> Suporte GLPI
-        </a>
+        <div class="nav-group" data-group="azure">
+          <button type="button" class="nav-group-head">
+            <span class="nav-ico">◆</span> Azure
+            <span class="chev">▾</span>
+          </button>
+          <div class="nav-group-body">
+            <a href="#" class="nav-item active" data-view="visao-geral">
+              <span class="nav-ico">▣</span> Visão geral
+            </a>
+            <a href="#" class="nav-item" data-view="responsaveis">
+              <span class="nav-ico">▤</span> Responsáveis
+            </a>
+            <a href="#" class="nav-item" data-view="sprint">
+              <span class="nav-ico">▦</span> Sprint
+            </a>
+            <a href="#" class="nav-item" data-view="aging">
+              <span class="nav-ico">◇</span> Aging
+            </a>
+            <a href="#" class="nav-item" data-view="qas">
+              <span class="nav-ico">✎</span> QAs
+            </a>
+          </div>
+        </div>
+
+        <div class="nav-group" data-group="glpi">
+          <button type="button" class="nav-group-head">
+            <span class="nav-ico">⛑</span> Suporte
+            <span class="chev">▾</span>
+          </button>
+          <div class="nav-group-body">
+            <a href="#" class="nav-item" data-view="glpi">
+              <span class="nav-ico">▤</span> GLPI
+            </a>
+          </div>
+        </div>
       </nav>
       <div class="sidebar-foot">
         <p id="sourceInfo">Carregando fonte…</p>

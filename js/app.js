@@ -305,6 +305,11 @@
       if (url) window.open(url, "_blank", "noopener");
     });
     $("refreshBtn").addEventListener("click", refresh);
+    document.querySelectorAll(".nav-group-head").forEach((h) =>
+      h.addEventListener("click", () =>
+        h.parentElement.classList.toggle("collapsed")
+      )
+    );
     document.querySelectorAll(".nav-item").forEach((el) =>
       el.addEventListener("click", (e) => {
         e.preventDefault();
