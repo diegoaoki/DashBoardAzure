@@ -175,20 +175,21 @@ module.exports = async (req, res) => {
     });
 
     let sprint = null;
+    let sprints = [];
     try {
       const it = await azGet(
-        `${teamBase}/_apis/work/teamsettings/iterations?$timeframe=current&api-version=${API}`,
+        `${teamBase}/_apis/work/teamsettings/iterations?api-version=${API}`,
         AZDO_PAT
       );
-      const cur = it.value && it.value[0];
-      if (cur) {
-        sprint = {
-          nome: cur.name,
-          path: cur.path,
-          inicio: cur.attributes && cur.attributes.startDate,
-          fim: cur.attributes && cur.attributes.finishDate,
-        };
-      }
+      sprints = (it.value || []).map((v) => ({
+        nome: v.name,
+        path: v.path,
+        inicio: v.attributes && v.attributes.startDate,
+        fim: v.attributes && v.attributes.finishDate,
+        timeframe: v.attributes && v.attributes.timeFrame, // past | current | future
+      }));
+      const cur = sprints.find((s) => s.timeframe === "current");
+      if (cur) sprint = { nome: cur.nome, path: cur.path, inicio: cur.inicio, fim: cur.fim };
     } catch {
       /* time sem iterations configuradas */
     }
@@ -201,6 +202,7 @@ module.exports = async (req, res) => {
       team: AZDO_TEAM || "(time padrão)",
       doneStates,
       sprint,
+      sprints,
       totalNoBoard,
       truncated,
       qaTruncated,

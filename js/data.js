@@ -11,10 +11,17 @@ window.DASH_DATA = (function () {
     const qas = ["QA Paula", "QA Rafael", "QA Tânia"];
     const tipos = ["User Story", "Bug", "Task", "Feature"];
     const estados = ["New", "Active", "Resolved", "Closed", "Removed"];
+    const sprintsMock = [
+      { nome: "Sprint 12", path: "Projeto Demo\\Sprint 12", timeframe: "past" },
+      { nome: "Sprint 13", path: "Projeto Demo\\Sprint 13", timeframe: "past" },
+      { nome: "Sprint 14", path: "Projeto Demo\\Sprint 14", timeframe: "current" },
+      { nome: "Sprint 15", path: "Projeto Demo\\Sprint 15", timeframe: "future" },
+    ];
     const now = Date.now();
     const items = Array.from({ length: 140 }, (_, i) => {
       const estado = estados[i % estados.length];
       const idade = (i * 7) % 220;
+      const sp = sprintsMock[i % sprintsMock.length];
       return {
         id: 1000 + i,
         titulo: "Item de exemplo " + (i + 1),
@@ -24,7 +31,7 @@ window.DASH_DATA = (function () {
         criadoEm: new Date(now - idade * 86400000).toISOString(),
         idadeDias: idade,
         concluido: estado === "Closed" || estado === "Removed" || estado === "Resolved",
-        iteracao: "Projeto Demo\\Sprint 14",
+        iteracao: sp.path,
         pontos: [0, 1, 2, 3, 5, 8][i % 6],
         comentarios: i % 3,
         // 0, 1 ou 2 QAs distintos por card (distinto = 1 por pessoa/card)
@@ -39,6 +46,7 @@ window.DASH_DATA = (function () {
       mock: true,
       doneStates: ["closed", "done", "resolved", "completed", "removed"],
       sprint: { nome: "Sprint 14", path: "Projeto Demo\\Sprint 14", inicio: null, fim: null },
+      sprints: sprintsMock.map((s) => ({ ...s, inicio: null, fim: null })),
       totalNoBoard: 140,
       truncated: false,
       items,

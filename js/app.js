@@ -22,13 +22,22 @@
   /* ---------- filtros ---------- */
   function filtered() {
     const analyst = $("analystFilter").value;
+    const sprintPath = $("sprintFilter").value;
     const days = parseInt($("periodFilter").value, 10) || 0;
     const minTime = days ? Date.now() - days * 86400000 : 0;
     return RAW.items.filter((i) => {
       if (analyst && i.responsavel !== analyst) return false;
+      if (sprintPath && i.iteracao !== sprintPath) return false;
       if (minTime && new Date(i.criadoEm).getTime() < minTime) return false;
       return true;
     });
+  }
+
+  // Sprint usada no banner: a selecionada no filtro, senão a atual.
+  function activeSprint() {
+    const sel = $("sprintFilter").value;
+    if (sel) return (RAW.sprints || []).find((s) => s.path === sel) || null;
+    return RAW.sprint || null;
   }
 
   function countBy(items, key) {
@@ -60,7 +69,7 @@
       else if (i.idadeDias <= 90) buckets["31-90d"]++;
       else buckets["90d+"]++;
     }
-    const sp = RAW.sprint;
+    const sp = activeSprint();
     let sprint = null;
     if (sp) {
       const inSprint = items.filter((i) => i.iteracao === sp.path);
@@ -201,6 +210,22 @@
     if (nomes.includes(prev)) sel.value = prev;
   }
 
+  function fillSprints() {
+    const sel = $("sprintFilter");
+    const prev = sel.value;
+    const list = RAW.sprints || [];
+    const tf = { current: " (atual)", future: " (futura)", past: "" };
+    sel.innerHTML =
+      '<option value="">Todas</option>' +
+      list
+        .map(
+          (s) =>
+            `<option value="${esc(s.path)}">${esc(s.nome)}${tf[s.timeframe] || ""}</option>`
+        )
+        .join("");
+    if (list.some((s) => s.path === prev)) sel.value = prev;
+  }
+
   function setStatus(result) {
     const badge = $("statusBadge");
     const src = $("sourceInfo");
@@ -228,6 +253,7 @@
       RAW = result.data;
       setStatus(result);
       fillAnalysts();
+      fillSprints();
       recompute();
       applyView(view);
     } finally {
@@ -237,6 +263,7 @@
 
   function bind() {
     $("analystFilter").addEventListener("change", recompute);
+    $("sprintFilter").addEventListener("change", recompute);
     $("periodFilter").addEventListener("change", recompute);
     $("tableSearch").addEventListener("input", () => renderTable(aggregate(filtered()).itens));
     $("refreshBtn").addEventListener("click", refresh);
