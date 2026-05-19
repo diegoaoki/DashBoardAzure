@@ -150,7 +150,7 @@ window.DASH_GLPI = (function () {
     const ar = $("glpiFltArea");
     const arPrev = ar.value;
     const areas = [...new Set(
-      [].concat(...Object.values(tecMap)).map((x) => x.grupo).filter(Boolean)
+      Object.values(tecMap).flat().map((x) => x.grupo).filter(Boolean)
     )].sort((a, b) => Number(a) - Number(b));
     ar.innerHTML =
       '<option value="">Todas</option>' +
@@ -399,9 +399,10 @@ window.DASH_GLPI = (function () {
       }
       allTickets = tickets;
       lastDupes = dupes;
-      fillFilterOptions();
-      recompute();
-      badge("✓ " + tickets.length + " tickets", "ok");
+      // independentes: um erro nos filtros não pode zerar o relatório
+      try { fillFilterOptions(); } catch (e) { console.error("GLPI filtros:", e); }
+      try { recompute(); } catch (e) { console.error("GLPI render:", e); }
+      badge("✓ " + tickets.length + " tickets" + (tec ? "" : " (sem técnicos)"), "ok");
       loaded = true;
     } catch (e) {
       badge("Erro", "warn");
