@@ -23,11 +23,13 @@
   function filtered() {
     const analyst = $("analystFilter").value;
     const sprintPath = $("sprintFilter").value;
+    const qaName = $("qaFilter").value;
     const days = parseInt($("periodFilter").value, 10) || 0;
     const minTime = days ? Date.now() - days * 86400000 : 0;
     return RAW.items.filter((i) => {
       if (analyst && i.responsavel !== analyst) return false;
       if (sprintPath && i.iteracao !== sprintPath) return false;
+      if (qaName && !(i.comentaristas || []).includes(qaName)) return false;
       if (minTime && new Date(i.criadoEm).getTime() < minTime) return false;
       return true;
     });
@@ -154,7 +156,7 @@
       ? list
           .slice(0, 100)
           .map(
-            (i) => `<tr>
+            (i) => `<tr class="row-link" data-id="${i.id}" title="Abrir no Azure DevOps">
           <td class="num">#${i.id}</td>
           <td>${esc(i.titulo)}</td>
           <td><span class="pill">${esc(i.tipo)}</span></td>
@@ -210,6 +212,33 @@
     if (nomes.includes(prev)) sel.value = prev;
   }
 
+  function fillQAs() {
+    const sel = $("qaFilter");
+    const prev = sel.value;
+    const nomes = [
+      ...new Set(RAW.items.flatMap((i) => i.comentaristas || [])),
+    ].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    sel.innerHTML =
+      '<option value="">Todos</option>' +
+      nomes.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+    if (nomes.includes(prev)) sel.value = prev;
+  }
+
+  // URL do work item no Azure DevOps (null no modo mock).
+  function azureUrl(id) {
+    if (!RAW || RAW.mock) return null;
+    return `https://dev.azure.com/${encodeURIComponent(RAW.org)}/${encodeURIComponent(
+      RAW.project
+    )}/_workitems/edit/${id}`;
+  }
+
+  // Clique numa barra → ajusta o select correspondente (toggle) e recalcula.
+  function onPick(kind, label) {
+    const sel = $(kind === "qa" ? "qaFilter" : "analystFilter");
+    sel.value = sel.value === label ? "" : label;
+    recompute();
+  }
+
   function fillSprints() {
     const sel = $("sprintFilter");
     const prev = sel.value;
@@ -254,6 +283,7 @@
       setStatus(result);
       fillAnalysts();
       fillSprints();
+      fillQAs();
       recompute();
       applyView(view);
     } finally {
@@ -264,8 +294,15 @@
   function bind() {
     $("analystFilter").addEventListener("change", recompute);
     $("sprintFilter").addEventListener("change", recompute);
+    $("qaFilter").addEventListener("change", recompute);
     $("periodFilter").addEventListener("change", recompute);
     $("tableSearch").addEventListener("input", () => renderTable(aggregate(filtered()).itens));
+    $("itemsTableBody").addEventListener("click", (e) => {
+      const tr = e.target.closest("tr.row-link");
+      if (!tr) return;
+      const url = azureUrl(tr.dataset.id);
+      if (url) window.open(url, "_blank", "noopener");
+    });
     $("refreshBtn").addEventListener("click", refresh);
     document.querySelectorAll(".nav-item").forEach((el) =>
       el.addEventListener("click", (e) => {
@@ -280,7 +317,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    C.init();
+    C.init(onPick);
     bind();
     refresh();
   });

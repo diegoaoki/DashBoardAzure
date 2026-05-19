@@ -192,6 +192,8 @@ body {
 }
 .data-table tbody tr { border-bottom: 1px solid rgba(36, 49, 84, 0.5); }
 .data-table tbody tr:hover { background: var(--card-2); }
+.data-table tbody tr.row-link { cursor: pointer; }
+.data-table tbody tr.row-link:hover { box-shadow: inset 3px 0 0 var(--accent); }
 .data-table tbody tr:last-child { border-bottom: none; }
 .data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .pill { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--card-2); color: var(--text-dim); }

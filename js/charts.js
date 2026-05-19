@@ -23,7 +23,19 @@ window.DASH_CHARTS = (function () {
 
   let state, type, assignee, aging, qa;
 
-  function init() {
+  // gera options.onClick/onHover para tornar um gráfico clicável
+  function pickable(chart, onPick, kind) {
+    return {
+      onClick: (_e, els) => {
+        if (els.length) onPick(kind, chart().data.labels[els[0].index]);
+      },
+      onHover: (e, els) => {
+        e.native.target.style.cursor = els.length ? "pointer" : "default";
+      },
+    };
+  }
+
+  function init(onPick) {
     state = new Chart(document.getElementById("stateChart"), {
       type: "bar",
       data: { labels: [], datasets: [{ label: "Itens", data: [], backgroundColor: COLORS.accent, borderRadius: 6, maxBarThickness: 60 }] },
@@ -39,7 +51,11 @@ window.DASH_CHARTS = (function () {
     assignee = new Chart(document.getElementById("assigneeChart"), {
       type: "bar",
       data: { labels: [], datasets: [{ label: "Itens", data: [], backgroundColor: COLORS.accent2, borderRadius: 6, maxBarThickness: 40 }] },
-      options: { responsive: true, maintainAspectRatio: false, indexAxis: "y", plugins: { legend: { display: false } }, scales },
+      options: {
+        responsive: true, maintainAspectRatio: false, indexAxis: "y",
+        plugins: { legend: { display: false } }, scales,
+        ...pickable(() => assignee, onPick, "analyst"),
+      },
     });
 
     aging = new Chart(document.getElementById("agingChart"), {
@@ -60,7 +76,11 @@ window.DASH_CHARTS = (function () {
     qa = new Chart(document.getElementById("qaChart"), {
       type: "bar",
       data: { labels: [], datasets: [{ label: "Cards comentados", data: [], backgroundColor: COLORS.good, borderRadius: 6, maxBarThickness: 40 }] },
-      options: { responsive: true, maintainAspectRatio: false, indexAxis: "y", plugins: { legend: { display: false } }, scales },
+      options: {
+        responsive: true, maintainAspectRatio: false, indexAxis: "y",
+        plugins: { legend: { display: false } }, scales,
+        ...pickable(() => qa, onPick, "qa"),
+      },
     });
   }
 
