@@ -38,8 +38,9 @@ Em **Project → Settings → Environment Variables**, adicione:
 | `AZDO_TEAM`         | —           | Time/board específico. Padrão: time padrão do projeto          |
 | `AZDO_DONE_STATES`  | —           | Estados de "concluído". Padrão: `Closed,Done,Resolved,Completed,Removed` |
 | `AZDO_QA_MAX_ITEMS` | —           | Teto de cards para buscar comentários (aba QAs). Padrão: `600`  |
-| `GLPI_ENDPOINT`     | —           | URL completa do endpoint GLPI **com o token** (aba Suporte GLPI) |
-| `GLPI_ALLOWED_HOST` | —           | Host liberado p/ `?url=`. Padrão: `avenida.verdanadesk.com`     |
+| `GLPI_ENDPOINT`          | —      | URL do endpoint de **tickets** GLPI **com o token** (aba Suporte GLPI) |
+| `GLPI_TECNICOS_ENDPOINT` | —      | URL do dataset **CLD_TECNICOS** (com token). Nome do analista (join `ticket_id`) |
+| `GLPI_ALLOWED_HOST`      | —      | Host liberado p/ `?url=`. Padrão: `avenida.verdanadesk.com`     |
 
 Depois faça um **redeploy** para as variáveis entrarem em vigor.
 

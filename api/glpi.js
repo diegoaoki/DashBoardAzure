@@ -4,19 +4,21 @@
  * O endpoint do GLPI não permite CORS; esta função busca server-side.
  *
  * Variáveis de ambiente (Vercel → Settings → Environment Variables):
- *   GLPI_ENDPOINT     (recomendado) URL completa do endpoint, COM o token.
- *                     Ex.: https://avenida.verdanadesk.com/plugins/utilsdashboards/
- *                          front/ajax/graphic.json.php?token=XXXX
- *   GLPI_ALLOWED_HOST (opcional)    host permitido para ?url=.
- *                     Padrão: avenida.verdanadesk.com
+ *   GLPI_ENDPOINT          (recomendado) URL completa de tickets, COM token.
+ *   GLPI_TECNICOS_ENDPOINT (opcional)    URL do dataset de técnicos (CLD_TECNICOS),
+ *                          usado p/ o nome do analista (join por ticket_id).
+ *   GLPI_ALLOWED_HOST      (opcional)    host permitido para ?url=.
+ *                          Padrão: avenida.verdanadesk.com
  *
  * Uso:
- *   GET /api/glpi              → usa GLPI_ENDPOINT
+ *   GET /api/glpi               → usa GLPI_ENDPOINT (tickets)
+ *   GET /api/glpi?src=tecnicos  → usa GLPI_TECNICOS_ENDPOINT (técnicos)
  *   GET /api/glpi?url=<urlGLPI> → só se o host estiver na allowlist (anti-SSRF)
  */
 module.exports = async (req, res) => {
   const allowedHost = process.env.GLPI_ALLOWED_HOST || "avenida.verdanadesk.com";
-  let target = req.query && req.query.url;
+  const q = req.query || {};
+  let target = q.url;
 
   if (target) {
     let host;
@@ -28,6 +30,14 @@ module.exports = async (req, res) => {
     }
     if (host !== allowedHost) {
       res.status(403).json({ error: `Host não permitido: ${host} (esperado ${allowedHost}).` });
+      return;
+    }
+  } else if (q.src === "tecnicos") {
+    target = process.env.GLPI_TECNICOS_ENDPOINT;
+    if (!target) {
+      res.status(500).json({
+        error: "Defina GLPI_TECNICOS_ENDPOINT nas variáveis de ambiente do Vercel.",
+      });
       return;
     }
   } else {
