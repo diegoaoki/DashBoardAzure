@@ -111,16 +111,22 @@
   }
 
   async function refresh() {
+    const loader = document.getElementById("loader");
     const badge = document.getElementById("statusBadge");
+    loader.classList.remove("hidden");
     badge.textContent = "Carregando…";
     badge.className = "status-badge";
-    const result = await D.load();
-    CURRENT = result.data;
-    setStatus(result);
-    renderKpis(CURRENT.totals);
-    renderSprint(CURRENT.sprint);
-    C.render(CURRENT);
-    renderTable(document.getElementById("tableSearch").value);
+    try {
+      const result = await D.load();
+      CURRENT = result.data;
+      setStatus(result);
+      renderKpis(CURRENT.totals);
+      renderSprint(CURRENT.sprint);
+      C.render(CURRENT);
+      renderTable(document.getElementById("tableSearch").value);
+    } finally {
+      loader.classList.add("hidden");
+    }
   }
 
   function bindEvents() {

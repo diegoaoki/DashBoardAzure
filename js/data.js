@@ -62,7 +62,10 @@ window.DASH_DATA = (function () {
 
   async function load() {
     try {
-      const r = await fetch("/api/board", { headers: { Accept: "application/json" } });
+      const r = await fetch("/api/board", {
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      });
       const body = await r.json();
       if (!r.ok || body.error) {
         return { data: MOCK, error: body.error || `HTTP ${r.status}`, usingMock: true };
