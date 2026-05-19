@@ -44,6 +44,35 @@ window.DASH_GLPI = (function () {
     !d ? "—" : d.toLocaleDateString("pt-BR") + " " +
       d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
+  /* ---------- nomes (descrição) dos usuários ----------
+   * O endpoint só garante IDs. Se o JSON trouxer um campo de nome
+   * (ex.: *RECIPIENT*NAME*), detectamos e montamos id→nome.
+   */
+  const nameCfg = { recip: null, upd: null, recipMap: {}, updMap: {} };
+
+  function detectNameFields(tickets) {
+    const sample = tickets.find(Boolean) || {};
+    const keys = Object.keys(sample);
+    const hasName = (k) => /(NAME|REALNAME|COMPLETENAME|FRIENDLY|DESC|LOGIN)/i.test(k);
+    nameCfg.recip = keys.find((k) => /RECIP/i.test(k) && hasName(k)) || null;
+    nameCfg.upd =
+      keys.find((k) => /(LASTUPDAT|UPDATER|TECH|ASSIGN)/i.test(k) && hasName(k)) || null;
+  }
+  function buildNameMaps(tickets) {
+    nameCfg.recipMap = {};
+    nameCfg.updMap = {};
+    tickets.forEach((t) => {
+      if (nameCfg.recip && t.USERS_ID_RECIPIENT != null)
+        nameCfg.recipMap[t.USERS_ID_RECIPIENT] = t[nameCfg.recip];
+      if (nameCfg.upd && t.USERS_ID_LASTUPDATER != null)
+        nameCfg.updMap[t.USERS_ID_LASTUPDATER] = t[nameCfg.upd];
+    });
+  }
+  const recipName = (id) =>
+    (id != null && nameCfg.recipMap[id]) || (id != null && id !== "" ? String(id) : "—");
+  const updName = (id) =>
+    (id != null && nameCfg.updMap[id]) || (id != null && id !== "" ? String(id) : "—");
+
   function badge(text, kind) {
     const b = $("glpiBadge");
     b.textContent = text;
@@ -60,6 +89,7 @@ window.DASH_GLPI = (function () {
       st: $("glpiFltStatus").value,
       og: $("glpiFltOrigem").value,
       rq: $("glpiFltReq").value,
+      an: $("glpiFltAnalista").value,
       days: parseInt($("glpiFltPeriodo").value, 10) || 0,
     };
   }
@@ -70,6 +100,7 @@ window.DASH_GLPI = (function () {
       if (f.st && String(t.STATUS) !== f.st) return false;
       if (f.og && String(t.REQUESTTYPES_ID) !== f.og) return false;
       if (f.rq && String(t.USERS_ID_RECIPIENT) !== f.rq) return false;
+      if (f.an && String(t.USERS_ID_LASTUPDATER) !== f.an) return false;
       if (minTime) {
         const d = parseDate(t.DATE);
         if (!d || d.getTime() < minTime) return false;
@@ -89,14 +120,24 @@ window.DASH_GLPI = (function () {
         .join("");
     if (tipos.includes(ogPrev)) og.value = ogPrev;
 
+    const optList = (ids, nameFn) =>
+      ids
+        .map((id) => ({ id, nome: nameFn(id) }))
+        .sort((a, b) => String(a.nome).localeCompare(String(b.nome), "pt-BR"))
+        .map((x) => `<option value="${esc(x.id)}">${esc(x.nome)}</option>`)
+        .join("");
+
     const rq = $("glpiFltReq");
     const rqPrev = rq.value;
-    const reqs = [...new Set(allTickets.map((t) => String(t.USERS_ID_RECIPIENT)).filter((v) => v && v !== "0"))]
-      .sort((a, b) => Number(a) - Number(b));
-    rq.innerHTML =
-      '<option value="">Todos</option>' +
-      reqs.map((id) => `<option value="${esc(id)}">${esc(id)}</option>`).join("");
+    const reqs = [...new Set(allTickets.map((t) => String(t.USERS_ID_RECIPIENT)).filter((v) => v && v !== "0"))];
+    rq.innerHTML = '<option value="">Todos</option>' + optList(reqs, recipName);
     if (reqs.includes(rqPrev)) rq.value = rqPrev;
+
+    const an = $("glpiFltAnalista");
+    const anPrev = an.value;
+    const ans = [...new Set(allTickets.map((t) => String(t.USERS_ID_LASTUPDATER)).filter((v) => v && v !== "0"))];
+    an.innerHTML = '<option value="">Todos</option>' + optList(ans, updName);
+    if (ans.includes(anPrev)) an.value = anPrev;
   }
 
   /* ---------- charts/render ---------- */
@@ -219,7 +260,7 @@ window.DASH_GLPI = (function () {
     $("glpiRecip").innerHTML = Object.entries(recip)
       .sort((a, b) => b[1].total - a[1].total)
       .slice(0, 15)
-      .map(([id, v]) => `<tr><td>${esc(id)}</td><td class="num">${v.total}</td><td class="num">${v.closed}</td><td class="num">${v.total - v.closed}</td></tr>`)
+      .map(([id, v]) => `<tr><td>${esc(recipName(id))}</td><td class="num">${v.total}</td><td class="num">${v.closed}</td><td class="num">${v.total - v.closed}</td></tr>`)
       .join("") || `<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:20px">—</td></tr>`;
 
     const upd = {};
@@ -230,7 +271,7 @@ window.DASH_GLPI = (function () {
     $("glpiUpd").innerHTML = Object.entries(upd)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 15)
-      .map(([id, v]) => `<tr><td>${esc(id)}</td><td class="num">${v}</td></tr>`)
+      .map(([id, v]) => `<tr><td>${esc(updName(id))}</td><td class="num">${v}</td></tr>`)
       .join("") || `<tr><td colspan="2" style="text-align:center;color:var(--text-dim);padding:20px">—</td></tr>`;
 
     renderTable(tickets);
@@ -243,7 +284,11 @@ window.DASH_GLPI = (function () {
     let rows = base
       .filter((t) => {
         if (!q) return true;
-        return [t.ID, t.NAME, t.USERS_ID_RECIPIENT, t.USERS_ID_LASTUPDATER]
+        return [
+          t.ID, t.NAME,
+          t.USERS_ID_RECIPIENT, recipName(t.USERS_ID_RECIPIENT),
+          t.USERS_ID_LASTUPDATER, updName(t.USERS_ID_LASTUPDATER),
+        ]
           .join(" ")
           .toLowerCase()
           .includes(q);
@@ -281,8 +326,8 @@ window.DASH_GLPI = (function () {
         <td>${fmtDateShort(t._c)}</td>
         <td class="num">${fmtDur(t._tta)}</td>
         <td class="num">${fmtDur(t._ttr)}</td>
-        <td class="num">${esc(t.USERS_ID_RECIPIENT || "—")}</td>
-        <td class="num">${esc(t.USERS_ID_LASTUPDATER || "—")}</td>
+        <td>${esc(recipName(t.USERS_ID_RECIPIENT))}</td>
+        <td>${esc(updName(t.USERS_ID_LASTUPDATER))}</td>
       </tr>`).join("");
     if (rows.length > max)
       html += `<tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:12px">+ ${rows.length - max} linhas ocultas (refine a busca)</td></tr>`;
@@ -319,6 +364,8 @@ window.DASH_GLPI = (function () {
       }
       allTickets = tickets;
       lastDupes = dupes;
+      detectNameFields(tickets);
+      buildNameMaps(tickets);
       fillFilterOptions();
       recompute();
       badge("✓ " + tickets.length + " tickets", "ok");
@@ -335,7 +382,7 @@ window.DASH_GLPI = (function () {
   function bind() {
     $("glpiReload").addEventListener("click", load);
     $("glpiTopReload").addEventListener("click", load);
-    ["glpiFltStatus", "glpiFltOrigem", "glpiFltReq", "glpiFltPeriodo"].forEach((id) =>
+    ["glpiFltStatus", "glpiFltOrigem", "glpiFltReq", "glpiFltAnalista", "glpiFltPeriodo"].forEach((id) =>
       $(id).addEventListener("change", recompute)
     );
     $("glpiSearch").addEventListener("input", () => {

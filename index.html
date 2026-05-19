@@ -119,6 +119,10 @@
             <select id="glpiFltReq"><option value="">Todos</option></select>
           </label>
           <label class="select" data-views="glpi">
+            <span>Analista</span>
+            <select id="glpiFltAnalista"><option value="">Todos</option></select>
+          </label>
+          <label class="select" data-views="glpi">
             <span>Período</span>
             <select id="glpiFltPeriodo">
               <option value="0">Todo o período</option>
@@ -234,7 +238,7 @@
               <div class="table-wrap" style="max-height:340px;overflow-y:auto">
                 <table class="data-table">
                   <thead><tr>
-                    <th>User ID</th><th class="num">Total</th>
+                    <th>Requerente</th><th class="num">Total</th>
                     <th class="num">Fechados</th><th class="num">Abertos</th>
                   </tr></thead>
                   <tbody id="glpiRecip"></tbody>
@@ -242,10 +246,10 @@
               </div>
             </article>
             <article class="card table-card">
-              <header class="card-head"><h2>Top 15 · Últimos atualizadores</h2></header>
+              <header class="card-head"><h2>Top 15 · Analistas (atualizadores)</h2></header>
               <div class="table-wrap" style="max-height:340px;overflow-y:auto">
                 <table class="data-table">
-                  <thead><tr><th>User ID</th><th class="num">Tickets</th></tr></thead>
+                  <thead><tr><th>Analista</th><th class="num">Tickets</th></tr></thead>
                   <tbody id="glpiUpd"></tbody>
                 </table>
               </div>
@@ -272,7 +276,7 @@
                   <th class="num">ID</th><th>Título</th><th>Status</th>
                   <th>Abertura</th><th>1º Toque</th><th>Solução</th><th>Fechamento</th>
                   <th class="num">TTA</th><th class="num">TTR</th>
-                  <th class="num">Req.</th><th class="num">Atu.</th>
+                  <th>Requerente</th><th>Analista</th>
                 </tr></thead>
                 <tbody id="glpiTickets"></tbody>
               </table>
