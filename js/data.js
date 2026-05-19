@@ -1,94 +1,81 @@
 /**
- * Dados de demonstração do dashboard.
- * Tudo mockado — substituir por chamada de API quando o backend existir.
+ * Carrega os dados do board via /api/board (Vercel Serverless Function).
+ * Se a API não estiver disponível (ex.: abrindo o HTML direto, sem deploy),
+ * cai num conjunto mockado para o layout continuar visível.
  */
 window.DASH_DATA = (function () {
-  const meses = [
-    "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
-    "Jul", "Ago", "Set", "Out", "Nov", "Dez",
-  ];
+  const fmtNum = (v) => Number(v || 0).toLocaleString("pt-BR");
 
-  // Receita mensal (R$ mil) e meta mensal
-  const receitaMensal = [
-    420, 455, 398, 510, 540, 600,
-    580, 625, 690, 710, 760, 845,
-  ];
-  const metaMensal = [
-    450, 450, 470, 500, 520, 560,
-    600, 620, 650, 700, 740, 800,
-  ];
+  const MOCK = {
+    generatedAt: new Date().toISOString(),
+    org: "demo",
+    project: "Projeto Demo",
+    team: "(mock)",
+    mock: true,
+    totals: { total: 142, abertos: 58, concluidos: 84, idadeMediaAberta: 23, truncated: false },
+    byState: [
+      { nome: "New", qtd: 22 },
+      { nome: "Active", qtd: 28 },
+      { nome: "Resolved", qtd: 8 },
+      { nome: "Closed", qtd: 76 },
+      { nome: "Removed", qtd: 8 },
+    ],
+    byType: [
+      { nome: "User Story", qtd: 54 },
+      { nome: "Bug", qtd: 49 },
+      { nome: "Task", qtd: 31 },
+      { nome: "Feature", qtd: 8 },
+    ],
+    byAssignee: [
+      { nome: "Ana Souza", qtd: 24 },
+      { nome: "Bruno Lima", qtd: 19 },
+      { nome: "Carla Dias", qtd: 17 },
+      { nome: "Diego F.", qtd: 14 },
+      { nome: "Não atribuído", qtd: 12 },
+    ],
+    aging: [
+      { faixa: "0-7d", qtd: 14 },
+      { faixa: "8-30d", qtd: 21 },
+      { faixa: "31-90d", qtd: 16 },
+      { faixa: "90d+", qtd: 7 },
+    ],
+    sprint: {
+      nome: "Sprint 14",
+      total: 26,
+      concluidos: 11,
+      abertos: 15,
+      pontos: 63,
+      pontosConcluidos: 28,
+      inicio: null,
+      fim: null,
+    },
+    itens: Array.from({ length: 12 }, (_, i) => ({
+      id: 1000 + i,
+      titulo: "Item de exemplo " + (i + 1),
+      tipo: ["Bug", "User Story", "Task"][i % 3],
+      estado: ["Active", "New", "Resolved"][i % 3],
+      responsavel: ["Ana Souza", "Bruno Lima", "Não atribuído"][i % 3],
+      idadeDias: 90 - i * 6,
+      concluido: false,
+    })),
+  };
 
-  const categorias = [
-    { nome: "Vestuário", valor: 1840 },
-    { nome: "Calçados", valor: 1210 },
-    { nome: "Acessórios", valor: 760 },
-    { nome: "Casa", valor: 540 },
-    { nome: "Eletro", valor: 430 },
-  ];
-
-  const regioes = [
-    { nome: "Sudeste", valor: 2950 },
-    { nome: "Sul", valor: 1480 },
-    { nome: "Nordeste", valor: 1120 },
-    { nome: "Centro-Oeste", valor: 690 },
-    { nome: "Norte", valor: 410 },
-  ];
-
-  const pedidosPorDia = [
-    { dia: "Seg", pedidos: 320 },
-    { dia: "Ter", pedidos: 285 },
-    { dia: "Qua", pedidos: 410 },
-    { dia: "Qui", pedidos: 380 },
-    { dia: "Sex", pedidos: 520 },
-    { dia: "Sáb", pedidos: 610 },
-    { dia: "Dom", pedidos: 240 },
-  ];
-
-  const produtos = [
-    { nome: "Camiseta Básica Premium", categoria: "Vestuário", unidades: 4820, receita: 192800, variacao: 12.4 },
-    { nome: "Tênis Runner X", categoria: "Calçados", unidades: 1960, receita: 489000, variacao: 8.1 },
-    { nome: "Jaqueta Corta-Vento", categoria: "Vestuário", unidades: 1340, receita: 268000, variacao: -3.2 },
-    { nome: "Mochila Urban 30L", categoria: "Acessórios", unidades: 2210, receita: 154700, variacao: 21.7 },
-    { nome: "Bota Trail Pro", categoria: "Calçados", unidades: 880, receita: 308000, variacao: 5.6 },
-    { nome: "Boné Snapback", categoria: "Acessórios", unidades: 3650, receita: 109500, variacao: -1.4 },
-    { nome: "Conjunto Cama Queen", categoria: "Casa", unidades: 720, receita: 187200, variacao: 9.9 },
-    { nome: "Liquidificador Turbo", categoria: "Eletro", unidades: 540, receita: 162000, variacao: 14.3 },
-  ];
-
-  function sliceUltimos(arr, n) {
-    return arr.slice(Math.max(0, arr.length - n));
+  async function load() {
+    try {
+      const r = await fetch("/api/board", { headers: { Accept: "application/json" } });
+      const body = await r.json();
+      if (!r.ok || body.error) {
+        return { data: MOCK, error: body.error || `HTTP ${r.status}`, usingMock: true };
+      }
+      return { data: body, error: null, usingMock: false };
+    } catch (e) {
+      return {
+        data: MOCK,
+        error: "Sem conexão com /api/board (rodando local?). Exibindo dados de exemplo.",
+        usingMock: true,
+      };
+    }
   }
 
-  const fmtBRL = (v) =>
-    v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-  const fmtNum = (v) => v.toLocaleString("pt-BR");
-
-  return {
-    meses,
-    receitaMensal,
-    metaMensal,
-    categorias,
-    regioes,
-    pedidosPorDia,
-    produtos,
-    sliceUltimos,
-    fmtBRL,
-    fmtNum,
-    /**
-     * Recalcula KPIs conforme o número de meses do filtro.
-     */
-    kpis(nMeses) {
-      const receita = sliceUltimos(receitaMensal, nMeses);
-      const totalReceita = receita.reduce((a, b) => a + b, 0) * 1000;
-      const totalPedidos = pedidosPorDia.reduce((a, b) => a + b.pedidos, 0) * Math.round(nMeses * 4.3);
-      const ticket = totalReceita / totalPedidos;
-      const unidades = produtos.reduce((a, p) => a + p.unidades, 0);
-      return [
-        { label: "Receita total", value: fmtBRL(totalReceita), delta: 11.8, up: true },
-        { label: "Pedidos", value: fmtNum(totalPedidos), delta: 6.3, up: true },
-        { label: "Ticket médio", value: fmtBRL(ticket), delta: 4.2, up: true },
-        { label: "Unidades vendidas", value: fmtNum(unidades), delta: -2.1, up: false },
-      ];
-    },
-  };
+  return { load, fmtNum, MOCK };
 })();

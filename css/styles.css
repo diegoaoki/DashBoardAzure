@@ -198,6 +198,46 @@ body {
 .trend-up { color: var(--good); font-weight: 600; }
 .trend-down { color: var(--bad); font-weight: 600; }
 
+/* Status badge / refresh / sprint banner */
+.status-badge {
+  font-size: 12px; font-weight: 600;
+  padding: 5px 11px; border-radius: 999px;
+  border: 1px solid var(--border); color: var(--text-dim);
+  background: var(--card);
+}
+.status-badge.ok { color: var(--good); border-color: rgba(52, 211, 153, 0.4); }
+.status-badge.warn { color: #f59e0b; border-color: rgba(245, 158, 11, 0.4); }
+
+.refresh-btn {
+  background: var(--card); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 7px 12px; font-size: 13px; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.refresh-btn:hover { border-color: var(--accent); background: var(--card-2); }
+
+.banner {
+  background: linear-gradient(180deg, var(--card-2), var(--card));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+}
+.banner-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.banner-head strong { font-size: 15px; }
+.banner-head span { font-size: 13px; color: var(--text-dim); }
+.banner-sub { font-size: 12px; color: var(--text-dim); margin-top: 8px; }
+.progress {
+  height: 9px; border-radius: 999px; background: var(--bg-elev);
+  margin-top: 12px; overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--good));
+  border-radius: 999px; transition: width 0.4s ease;
+}
+.sidebar-foot small { opacity: 0.7; }
+
 /* Responsive */
 @media (max-width: 1024px) {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }

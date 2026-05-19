@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DashBoard Azure — Painel de Vendas</title>
+  <title>DashBoard Azure — Relatórios do Board</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
   <div class="layout">
-    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="brand">
         <span class="brand-mark">◆</span>
@@ -19,96 +18,82 @@
         <a href="#" class="nav-item active" data-view="visao-geral">
           <span class="nav-ico">▣</span> Visão geral
         </a>
-        <a href="#" class="nav-item" data-view="vendas">
-          <span class="nav-ico">▤</span> Vendas
+        <a href="#" class="nav-item" data-view="responsaveis">
+          <span class="nav-ico">▤</span> Responsáveis
         </a>
-        <a href="#" class="nav-item" data-view="produtos">
-          <span class="nav-ico">▦</span> Produtos
+        <a href="#" class="nav-item" data-view="sprint">
+          <span class="nav-ico">▦</span> Sprint
         </a>
-        <a href="#" class="nav-item" data-view="regioes">
-          <span class="nav-ico">◇</span> Regiões
+        <a href="#" class="nav-item" data-view="aging">
+          <span class="nav-ico">◇</span> Aging
         </a>
       </nav>
       <div class="sidebar-foot">
-        <p>Dados de demonstração</p>
+        <p id="sourceInfo">Carregando fonte…</p>
       </div>
     </aside>
 
-    <!-- Main -->
     <div class="main">
       <header class="topbar">
         <button class="hamburger" id="toggleSidebar" aria-label="Menu">☰</button>
         <div class="topbar-title">
           <h1 id="viewTitle">Visão geral</h1>
-          <p id="viewSubtitle">Resumo de desempenho — período atual</p>
+          <p id="viewSubtitle">Relatórios do board do Azure DevOps</p>
         </div>
         <div class="topbar-actions">
-          <label class="select">
-            <span>Período</span>
-            <select id="periodFilter">
-              <option value="6">Últimos 6 meses</option>
-              <option value="12" selected>Últimos 12 meses</option>
-              <option value="3">Últimos 3 meses</option>
-            </select>
-          </label>
+          <span class="status-badge" id="statusBadge">Carregando…</span>
+          <button class="refresh-btn" id="refreshBtn" title="Atualizar">↻ Atualizar</button>
           <div class="avatar" title="Usuário">DF</div>
         </div>
       </header>
 
       <main class="content">
-        <!-- KPI cards -->
+        <div class="banner" id="sprintBanner" hidden></div>
+
         <section class="kpi-grid" id="kpiGrid"></section>
 
-        <!-- Charts -->
         <section class="charts-grid">
           <article class="card chart-card chart-wide">
-            <header class="card-head">
-              <h2>Receita x Meta</h2>
-              <span class="card-tag">R$</span>
-            </header>
-            <div class="chart-wrap"><canvas id="revenueChart"></canvas></div>
+            <header class="card-head"><h2>Itens por estado</h2></header>
+            <div class="chart-wrap"><canvas id="stateChart"></canvas></div>
           </article>
 
           <article class="card chart-card">
-            <header class="card-head">
-              <h2>Vendas por categoria</h2>
-            </header>
-            <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+            <header class="card-head"><h2>Por tipo</h2></header>
+            <div class="chart-wrap"><canvas id="typeChart"></canvas></div>
           </article>
 
           <article class="card chart-card">
-            <header class="card-head">
-              <h2>Receita por região</h2>
-            </header>
-            <div class="chart-wrap"><canvas id="regionChart"></canvas></div>
+            <header class="card-head"><h2>Por responsável</h2></header>
+            <div class="chart-wrap"><canvas id="assigneeChart"></canvas></div>
           </article>
 
           <article class="card chart-card chart-wide">
             <header class="card-head">
-              <h2>Pedidos por dia da semana</h2>
+              <h2>Aging — itens em aberto por tempo</h2>
             </header>
-            <div class="chart-wrap"><canvas id="weekdayChart"></canvas></div>
+            <div class="chart-wrap"><canvas id="agingChart"></canvas></div>
           </article>
         </section>
 
-        <!-- Table -->
         <section class="card table-card">
           <header class="card-head">
-            <h2>Top produtos</h2>
-            <input type="search" id="tableSearch" class="table-search" placeholder="Filtrar produto…" />
+            <h2>Work items (mais antigos em aberto)</h2>
+            <input type="search" id="tableSearch" class="table-search" placeholder="Filtrar título / responsável…" />
           </header>
           <div class="table-wrap">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Produto</th>
-                  <th>Categoria</th>
-                  <th class="num">Unid. vendidas</th>
-                  <th class="num">Receita</th>
-                  <th class="num">Variação</th>
+                  <th class="num">ID</th>
+                  <th>Título</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
+                  <th>Responsável</th>
+                  <th class="num">Idade (dias)</th>
                 </tr>
               </thead>
-              <tbody id="productTableBody"></tbody>
+              <tbody id="itemsTableBody"></tbody>
             </table>
           </div>
         </section>
