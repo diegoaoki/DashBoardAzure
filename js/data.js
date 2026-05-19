@@ -1,64 +1,45 @@
 /**
- * Carrega os dados do board via /api/board (Vercel Serverless Function).
- * Se a API não estiver disponível (ex.: abrindo o HTML direto, sem deploy),
- * cai num conjunto mockado para o layout continuar visível.
+ * Carrega /api/board (Vercel Function). Retorna itens detalhados;
+ * a agregação e os filtros são feitos no app.js.
+ * Sem API disponível (HTML aberto direto), usa um mock.
  */
 window.DASH_DATA = (function () {
   const fmtNum = (v) => Number(v || 0).toLocaleString("pt-BR");
 
-  const MOCK = {
-    generatedAt: new Date().toISOString(),
-    org: "demo",
-    project: "Projeto Demo",
-    team: "(mock)",
-    mock: true,
-    totals: { total: 142, abertos: 58, concluidos: 84, idadeMediaAberta: 23, truncated: false },
-    byState: [
-      { nome: "New", qtd: 22 },
-      { nome: "Active", qtd: 28 },
-      { nome: "Resolved", qtd: 8 },
-      { nome: "Closed", qtd: 76 },
-      { nome: "Removed", qtd: 8 },
-    ],
-    byType: [
-      { nome: "User Story", qtd: 54 },
-      { nome: "Bug", qtd: 49 },
-      { nome: "Task", qtd: 31 },
-      { nome: "Feature", qtd: 8 },
-    ],
-    byAssignee: [
-      { nome: "Ana Souza", qtd: 24 },
-      { nome: "Bruno Lima", qtd: 19 },
-      { nome: "Carla Dias", qtd: 17 },
-      { nome: "Diego F.", qtd: 14 },
-      { nome: "Não atribuído", qtd: 12 },
-    ],
-    aging: [
-      { faixa: "0-7d", qtd: 14 },
-      { faixa: "8-30d", qtd: 21 },
-      { faixa: "31-90d", qtd: 16 },
-      { faixa: "90d+", qtd: 7 },
-    ],
-    sprint: {
-      nome: "Sprint 14",
-      total: 26,
-      concluidos: 11,
-      abertos: 15,
-      pontos: 63,
-      pontosConcluidos: 28,
-      inicio: null,
-      fim: null,
-    },
-    itens: Array.from({ length: 12 }, (_, i) => ({
-      id: 1000 + i,
-      titulo: "Item de exemplo " + (i + 1),
-      tipo: ["Bug", "User Story", "Task"][i % 3],
-      estado: ["Active", "New", "Resolved"][i % 3],
-      responsavel: ["Ana Souza", "Bruno Lima", "Não atribuído"][i % 3],
-      idadeDias: 90 - i * 6,
-      concluido: false,
-    })),
-  };
+  function buildMock() {
+    const nomes = ["Ana Souza", "Bruno Lima", "Carla Dias", "Diego F.", "Não atribuído"];
+    const tipos = ["User Story", "Bug", "Task", "Feature"];
+    const estados = ["New", "Active", "Resolved", "Closed", "Removed"];
+    const now = Date.now();
+    const items = Array.from({ length: 140 }, (_, i) => {
+      const estado = estados[i % estados.length];
+      const idade = (i * 7) % 220;
+      return {
+        id: 1000 + i,
+        titulo: "Item de exemplo " + (i + 1),
+        tipo: tipos[i % tipos.length],
+        estado,
+        responsavel: nomes[i % nomes.length],
+        criadoEm: new Date(now - idade * 86400000).toISOString(),
+        idadeDias: idade,
+        concluido: estado === "Closed" || estado === "Removed" || estado === "Resolved",
+        iteracao: "Projeto Demo\\Sprint 14",
+        pontos: [0, 1, 2, 3, 5, 8][i % 6],
+      };
+    });
+    return {
+      generatedAt: new Date().toISOString(),
+      org: "demo",
+      project: "Projeto Demo",
+      team: "(mock)",
+      mock: true,
+      doneStates: ["closed", "done", "resolved", "completed", "removed"],
+      sprint: { nome: "Sprint 14", path: "Projeto Demo\\Sprint 14", inicio: null, fim: null },
+      totalNoBoard: 140,
+      truncated: false,
+      items,
+    };
+  }
 
   async function load() {
     try {
@@ -68,17 +49,17 @@ window.DASH_DATA = (function () {
       });
       const body = await r.json();
       if (!r.ok || body.error) {
-        return { data: MOCK, error: body.error || `HTTP ${r.status}`, usingMock: true };
+        return { data: buildMock(), error: body.error || `HTTP ${r.status}`, usingMock: true };
       }
       return { data: body, error: null, usingMock: false };
     } catch (e) {
       return {
-        data: MOCK,
+        data: buildMock(),
         error: "Sem conexão com /api/board (rodando local?). Exibindo dados de exemplo.",
         usingMock: true,
       };
     }
   }
 
-  return { load, fmtNum, MOCK };
+  return { load, fmtNum, buildMock };
 })();

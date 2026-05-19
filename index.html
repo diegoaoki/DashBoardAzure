@@ -49,6 +49,21 @@
           <p id="viewSubtitle">Relatórios do board do Azure DevOps</p>
         </div>
         <div class="topbar-actions">
+          <label class="select">
+            <span>Analista</span>
+            <select id="analystFilter"><option value="">Todos</option></select>
+          </label>
+          <label class="select">
+            <span>Período</span>
+            <select id="periodFilter">
+              <option value="0">Todo o período</option>
+              <option value="7">Últimos 7 dias</option>
+              <option value="30">Últimos 30 dias</option>
+              <option value="90" selected>Últimos 90 dias</option>
+              <option value="180">Últimos 6 meses</option>
+              <option value="365">Últimos 12 meses</option>
+            </select>
+          </label>
           <span class="status-badge" id="statusBadge">Carregando…</span>
           <button class="refresh-btn" id="refreshBtn" title="Atualizar">↻ Atualizar</button>
           <div class="avatar" title="Usuário">DF</div>
@@ -56,27 +71,27 @@
       </header>
 
       <main class="content">
-        <div class="banner" id="sprintBanner" hidden></div>
+        <div class="banner" id="sprintBanner" data-views="visao-geral sprint" hidden></div>
 
         <section class="kpi-grid" id="kpiGrid"></section>
 
         <section class="charts-grid">
-          <article class="card chart-card chart-wide">
+          <article class="card chart-card chart-wide" data-views="visao-geral sprint">
             <header class="card-head"><h2>Itens por estado</h2></header>
             <div class="chart-wrap"><canvas id="stateChart"></canvas></div>
           </article>
 
-          <article class="card chart-card">
+          <article class="card chart-card" data-views="visao-geral">
             <header class="card-head"><h2>Por tipo</h2></header>
             <div class="chart-wrap"><canvas id="typeChart"></canvas></div>
           </article>
 
-          <article class="card chart-card">
+          <article class="card chart-card" data-views="visao-geral responsaveis">
             <header class="card-head"><h2>Por responsável</h2></header>
             <div class="chart-wrap"><canvas id="assigneeChart"></canvas></div>
           </article>
 
-          <article class="card chart-card chart-wide">
+          <article class="card chart-card chart-wide" data-views="visao-geral aging">
             <header class="card-head">
               <h2>Aging — itens em aberto por tempo</h2>
             </header>
