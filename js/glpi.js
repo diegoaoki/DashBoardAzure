@@ -280,6 +280,58 @@ window.DASH_GLPI = (function () {
       },
     });
 
+    // Chamados por analista (técnico), por mês — barras empilhadas.
+    // Top 10 analistas + "Outros"; tickets sem técnico → "Sem analista".
+    const am = {};      // "YYYY-MM" -> { analista -> count }
+    const anaTot = {};  // analista -> total (p/ escolher os top)
+    tickets.forEach((t) => {
+      const d = parseDate(t.DATE);
+      if (!d) return;
+      const mk = d.toISOString().slice(0, 7);
+      const nomes = [...new Set(tecsOf(t.ID).map((x) => x.nome))];
+      const list = nomes.length ? nomes : ["Sem analista"];
+      list.forEach((nome) => {
+        (am[mk] = am[mk] || {})[nome] = (am[mk][nome] || 0) + 1;
+        anaTot[nome] = (anaTot[nome] || 0) + 1;
+      });
+    });
+    const amMonths = Object.keys(am).sort();
+    const topAna = Object.entries(anaTot)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([n]) => n);
+    const amSeries = Object.keys(anaTot).length > topAna.length
+      ? [...topAna, "Outros"]
+      : topAna;
+    const amDatasets = amSeries.map((nome, i) => ({
+      label: nome,
+      data: amMonths.map((mk) => {
+        const row = am[mk] || {};
+        if (nome === "Outros")
+          return Object.entries(row).reduce(
+            (s, [k, v]) => (topAna.includes(k) ? s : s + v), 0
+          );
+        return row[nome] || 0;
+      }),
+      backgroundColor: COLORS[i % COLORS.length],
+      borderWidth: 0,
+    }));
+    charts.anaMes = new Chart($("glpiChAnaMes"), {
+      type: "bar",
+      data: { labels: amMonths, datasets: amDatasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } },
+          tooltip: { mode: "index" },
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false } },
+          y: { stacked: true, beginAtZero: true },
+        },
+      },
+    });
+
     const recip = {};
     tickets.forEach((t) => {
       const id = t.USERS_ID_RECIPIENT;
