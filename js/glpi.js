@@ -12,6 +12,9 @@ window.DASH_GLPI = (function () {
     1: "Helpdesk", 2: "E-mail", 3: "Telefone", 4: "Outro",
     5: "Escrito", 6: "Direto", 7: "Formulário",
   };
+  // grupo_id → nome da área. Preencher quando houver fonte de nomes
+  // (ex.: { "11": "Suporte N1", "12": "Infra" }). Vazio = mostra "Grupo <id>".
+  const GRUPO_NOMES = {};
   const COLORS = [
     "#4cc9f0", "#f72585", "#06d6a0", "#ffd166", "#ef476f", "#a06cd5",
     "#ff9e00", "#90e0ef", "#b5179e", "#80ed99", "#fdc500", "#48bfe3",
@@ -49,7 +52,7 @@ window.DASH_GLPI = (function () {
    * dataset de técnicos, cruzado por ticket_id = ID. Um ticket pode
    * ter mais de um técnico (grupo) → guardamos lista.
    */
-  let tecMap = {}; // ticket_id -> [{ id, nome }]
+  let tecMap = {}; // ticket_id -> [{ id, nome, grupo }]
   function buildTecMap(rows) {
     tecMap = {};
     (rows || []).forEach((r) => {
@@ -57,10 +60,12 @@ window.DASH_GLPI = (function () {
       if (tid == null) return;
       const id = r.tecnico_id != null ? String(r.tecnico_id) : "";
       const nome = r.tecnico || r.login || (id ? "Téc. " + id : "—");
-      (tecMap[tid] = tecMap[tid] || []).push({ id, nome });
+      const grupo = r.grupo_id != null && r.grupo_id !== "" ? String(r.grupo_id) : "";
+      (tecMap[tid] = tecMap[tid] || []).push({ id, nome, grupo });
     });
   }
   const tecsOf = (ticketId) => tecMap[ticketId] || [];
+  const areasOf = (ticketId) => [...new Set(tecsOf(ticketId).map((x) => x.grupo).filter(Boolean))];
   const analistaNomes = (ticketId) => {
     const ts = tecsOf(ticketId);
     if (!ts.length) return "—";
@@ -85,6 +90,7 @@ window.DASH_GLPI = (function () {
       og: $("glpiFltOrigem").value,
       rq: $("glpiFltReq").value,
       an: $("glpiFltAnalista").value,
+      ar: $("glpiFltArea").value,
       days: parseInt($("glpiFltPeriodo").value, 10) || 0,
     };
   }
@@ -96,6 +102,7 @@ window.DASH_GLPI = (function () {
       if (f.og && String(t.REQUESTTYPES_ID) !== f.og) return false;
       if (f.rq && String(t.USERS_ID_RECIPIENT) !== f.rq) return false;
       if (f.an && !tecsOf(t.ID).some((x) => x.id === f.an)) return false;
+      if (f.ar && !areasOf(t.ID).includes(f.ar)) return false;
       if (minTime) {
         const d = parseDate(t.DATE);
         if (!d || d.getTime() < minTime) return false;
@@ -138,6 +145,17 @@ window.DASH_GLPI = (function () {
       '<option value="">Todos</option>' +
       ans.map(([id, nome]) => `<option value="${esc(id)}">${esc(nome)}</option>`).join("");
     if (ans.some(([id]) => id === anPrev)) an.value = anPrev;
+
+    // Área = grupo_id do dataset de técnicos
+    const ar = $("glpiFltArea");
+    const arPrev = ar.value;
+    const areas = [...new Set(
+      [].concat(...Object.values(tecMap)).map((x) => x.grupo).filter(Boolean)
+    )].sort((a, b) => Number(a) - Number(b));
+    ar.innerHTML =
+      '<option value="">Todas</option>' +
+      areas.map((id) => `<option value="${esc(id)}">${esc(GRUPO_NOMES[id] || "Grupo " + id)}</option>`).join("");
+    if (areas.includes(arPrev)) ar.value = arPrev;
   }
 
   /* ---------- charts/render ---------- */
@@ -397,7 +415,7 @@ window.DASH_GLPI = (function () {
   function bind() {
     $("glpiReload").addEventListener("click", load);
     $("glpiTopReload").addEventListener("click", load);
-    ["glpiFltStatus", "glpiFltOrigem", "glpiFltReq", "glpiFltAnalista", "glpiFltPeriodo"].forEach((id) =>
+    ["glpiFltStatus", "glpiFltOrigem", "glpiFltReq", "glpiFltAnalista", "glpiFltArea", "glpiFltPeriodo"].forEach((id) =>
       $(id).addEventListener("change", recompute)
     );
     $("glpiSearch").addEventListener("input", () => {
